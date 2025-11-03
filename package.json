@@ -1,0 +1,18 @@
+{
+  "name": "tier1fitness_app",
+  "version": "1.0.0",
+  "description": "Tier1Fitness social exercise companion application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

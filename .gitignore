@@ -1,0 +1,17 @@
+
+# Node
+/node_modules
+npm-debug.log
+
+# Environment Variables
+.env
+.env.*
+
+# Caches & Build Artifacts
+dist/
+build/
+.expo/
+.next/
+
+# OS files
+.DS_Store
