@@ -79,3 +79,33 @@ export interface HealthData {
   totalWorkouts: number;
 }
 
+
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  creator: PublicUser; 
+  startDate: string;
+  endDate: string;
+  participantCount: number;
+}
+
+
+export interface ChallengeParticipant {
+  user: PublicUser; 
+  progress: 'completed' | 'in progress';
+}
+
+
+export interface ChallengeDetails extends Challenge {
+  isPublic: boolean;
+  participants: ChallengeParticipant[];
+}
+
+
+export interface LeaderboardEntry {
+  rank: number;
+  user: PublicUser; 
+  score: number;
+  weeklyStreak?: number;
+}
