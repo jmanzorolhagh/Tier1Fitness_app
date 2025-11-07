@@ -11,6 +11,10 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@prisma/client": "^6.19.0",
     "@tier1fitness_app/types": "^1.0.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.0"
   }
 }
