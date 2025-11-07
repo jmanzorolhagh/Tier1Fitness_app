@@ -1,15 +1,79 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") // This pulls from your .env file
+}
+
+
+enum PostType {
+  WORKOUT
+  MILESTONE
+  MOTIVATION
+  PROGRESS_PHOTO
+  CHALLENGE_UPDATE
+}
+
+enum ProgressStatus {
+  in_progress
+  completed
+}
+
+
+model User {
+  id        String @id @default(cuid())
+  username  String @unique
+  email     String @unique
+  bio       String? // From UserProfile template
+  
+  passwordHash String
+
+  profilePicUrl String
+  
+  createdAt     DateTime @default(now())
+
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  createdChallenges Challenge[] @relation("CreatedChallenges")
+  participations    ChallengeParticipant[]
+  healthData        HealthData[]
+
+  following         Follow[] @relation("Following")
+  followers         Follow[] @relation("Followers")
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  caption   String
+  imageUrl  String?  // Optional, just like your template
+  postType  PostType
+  createdAt DateTime @default(now())
+
+  // Relation to the User who created it
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String   // The foreign key
+
+  // Relations to power 'likeCount' and 'commentCount'
+  comments  Comment[]
+  likes     Like[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  // Relation to the User who wrote it
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+
+  // Relation to the Post it belongs to
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
 }
