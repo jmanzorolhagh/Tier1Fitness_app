@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // This pulls from your .env file
+  url      = env("DATABASE_URL") 
 }
 
 
@@ -29,7 +29,7 @@ model User {
   id        String @id @default(cuid())
   username  String @unique
   email     String @unique
-  bio       String? // From UserProfile template
+  bio       String? 
   
   passwordHash String
 
@@ -51,15 +51,13 @@ model User {
 model Post {
   id        String   @id @default(cuid())
   caption   String
-  imageUrl  String?  // Optional, just like your template
+  imageUrl  String?  
   postType  PostType
   createdAt DateTime @default(now())
 
-  // Relation to the User who created it
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId  String   // The foreign key
+  authorId  String  
 
-  // Relations to power 'likeCount' and 'commentCount'
   comments  Comment[]
   likes     Like[]
 }
@@ -69,11 +67,79 @@ model Comment {
   content   String
   createdAt DateTime @default(now())
 
-  // Relation to the User who wrote it
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId  String
 
-  // Relation to the Post it belongs to
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId    String
+}
+
+model HealthData {
+  id            String   @id @default(cuid())
+  date          DateTime @db.Date 
+  dailySteps    Int
+  dailyCalories Int
+  totalWorkouts Int
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+
+  @@unique([userId, date])
+}
+
+model Challenge {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  startDate    DateTime
+  endDate      DateTime
+  isPublic     Boolean  @default(true) 
+
+
+  creator      User     @relation("CreatedChallenges", fields: [creatorId], references: [id])
+  creatorId    String
+
+
+  participants ChallengeParticipant[]
+}
+
+model ChallengeParticipant {
+  id        String         @id @default(cuid())
+  progress  ProgressStatus @default(in_progress)
+
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  challenge Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId String
+
+
+  @@unique([userId, challengeId])
+}
+
+
+model Like {
+  id     String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+
+  @@unique([userId, postId])
+}
+
+
+model Follow {
+  id          String @id @default(cuid())
+
+  follower    User   @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId  String
+
+  following   User   @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId String
+
+  @@unique([followerId, followingId])
 }
