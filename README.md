@@ -1,4 +1,4 @@
-Tier1Fitness App
+<!-- ⚠️ This README has been generated from the file(s) "blueprint.md" ⚠️-->Tier1Fitness App
 A social fitness community platform, built with React Native (Expo) and a Node.js (Express/Prisma) backend.
 
 Project Structure
@@ -27,13 +27,22 @@ First, clone the repo and install all dependencies from the root.
 
 ```bash
 
-# Clone the repository
+
+[![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#clone-the-repository)
+
+# ➤ Clone the repository
 git clone https://github.com/YOUR_USERNAME/Tier1Fitness_app.git
 
-# Navigate into the project root
+
+[![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#navigate-into-the-project-root)
+
+# ➤ Navigate into the project root
 cd Tier1Fitness_app
 
-# Install all dependencies for all workspaces (server, mobile, etc.)
+
+[![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#install-all-dependencies-for-all-workspaces-server-mobile-etc)
+
+# ➤ Install all dependencies for all workspaces (server, mobile, etc.)
 npm install
 
 ```
@@ -63,7 +72,10 @@ Open the new .env file and update the DATABASE_URL to point to your local databa
 
 ```javascript
 
-# .env.example
+
+[![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#envexample)
+
+# ➤ .env.example
 
 DATABASE_URL="postgresql://postgres@localhost:5432/tier1fitness_dev"
 ```
@@ -72,7 +84,10 @@ This is the final setup step. This command reads the prisma/schema.prisma file a
 
 ```bash
 
-# From the apps/server directory
+
+[![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#from-the-appsserver-directory)
+
+# ➤ From the apps/server directory
 npm run db:migrate
 ```
 Running the Project
@@ -81,7 +96,10 @@ You'll need two terminals open.
 Terminal 1: Run the Backend
 ```bash
 
-# From the project root
+
+[![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#from-the-project-root)
+
+# ➤ From the project root
 npm run dev --workspace=apps/server
 ```
 This will start the Node.js server.
@@ -91,7 +109,10 @@ When we have the mobile app ready:
 Terminal 2: Run the Mobile App
 ```bash
 
-# From the project root
+
+[![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#from-the-project-root)
+
+# ➤ From the project root
 npm start --workspace=apps/mobile
 ```
 This will start the Expo bundler for the mobile app.
