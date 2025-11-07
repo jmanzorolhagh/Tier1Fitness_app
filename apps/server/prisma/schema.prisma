@@ -1,0 +1,145 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") 
+}
+
+
+enum PostType {
+  WORKOUT
+  MILESTONE
+  MOTIVATION
+  PROGRESS_PHOTO
+  CHALLENGE_UPDATE
+}
+
+enum ProgressStatus {
+  in_progress
+  completed
+}
+
+
+model User {
+  id        String @id @default(cuid())
+  username  String @unique
+  email     String @unique
+  bio       String? 
+  
+  passwordHash String
+
+  profilePicUrl String
+  
+  createdAt     DateTime @default(now())
+
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  createdChallenges Challenge[] @relation("CreatedChallenges")
+  participations    ChallengeParticipant[]
+  healthData        HealthData[]
+
+  following         Follow[] @relation("Following")
+  followers         Follow[] @relation("Followers")
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  caption   String
+  imageUrl  String?  
+  postType  PostType
+  createdAt DateTime @default(now())
+
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String  
+
+  comments  Comment[]
+  likes     Like[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+}
+
+model HealthData {
+  id            String   @id @default(cuid())
+  date          DateTime @db.Date 
+  dailySteps    Int
+  dailyCalories Int
+  totalWorkouts Int
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+
+  @@unique([userId, date])
+}
+
+model Challenge {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  startDate    DateTime
+  endDate      DateTime
+  isPublic     Boolean  @default(true) 
+
+
+  creator      User     @relation("CreatedChallenges", fields: [creatorId], references: [id])
+  creatorId    String
+
+
+  participants ChallengeParticipant[]
+}
+
+model ChallengeParticipant {
+  id        String         @id @default(cuid())
+  progress  ProgressStatus @default(in_progress)
+
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  challenge Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId String
+
+
+  @@unique([userId, challengeId])
+}
+
+
+model Like {
+  id     String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+
+  @@unique([userId, postId])
+}
+
+
+model Follow {
+  id          String @id @default(cuid())
+
+  follower    User   @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId  String
+
+  following   User   @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId String
+
+  @@unique([followerId, followingId])
+}

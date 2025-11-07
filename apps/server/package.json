@@ -4,13 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "db:migrate": "dotenv prisma migrate dev",
+    "db:generate": "dotenv prisma generate",
+    "db:studio": "dotenv prisma studio",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@tier1fitness_app/types": "^1.0.0"
+    "@prisma/client": "^6.19.0",
+    "@tier1fitness_app/types": "^1.0.0",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.0"
   }
 }
