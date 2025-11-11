@@ -1,8 +1,15 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+import { Post, PostType, PrismaClient } from '@prisma/client';
 
-import { User } from '@tier1fitness_app/types';
+import { 
+  User, 
+  Post as ApiPost,
+  PostType as ApiPostType,
+  PublicUser, 
+  LeaderboardEntry, 
+  HealthData 
+} from '@tier1fitness_app/types';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -56,6 +63,45 @@ catch (error) {
 }
     
 });
+
+app.post('/api/posts', async (req: Request, res: Response) => {
+    try{
+        const postsFromDb = await prisma.post.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: {
+            author: true,
+            }
+        });
+        const postsToSend: ApiPost[] = postsFromDb.map(post => {
+            const publicAuthor: PublicUser = {
+                id: post.author.id,
+                username: post.author.username,
+                profilePicUrl: post.author.profilePicUrl
+            };
+
+            return {
+                id: post.id,
+                caption: post.caption,
+                imageUrl: post.imageUrl || undefined,
+                postType: post.postType as ApiPostType,
+                createdAt: post.createdAt.toISOString(),
+                author: publicAuthor,
+
+                likeCount: Math.floor(Math.random() * 50),
+                commentCount: Math.floor(Math.random() * 10),
+                hasLiked: Math.random() > 0.5
+            };
+        });
+        
+    res.json(postsToSend);
+
+
+    }
+    catch{
+
+    }
+});
+
 
 const PORT = 3000;
 app.listen(PORT, () => {
