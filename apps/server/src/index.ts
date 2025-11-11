@@ -64,7 +64,7 @@ catch (error) {
     
 });
 
-app.post('/api/posts', async (req: Request, res: Response) => {
+app.get('/api/posts', async (req: Request, res: Response) => {
     try{
         const postsFromDb = await prisma.post.findMany({
             orderBy: { createdAt: 'desc' },
@@ -97,11 +97,52 @@ app.post('/api/posts', async (req: Request, res: Response) => {
 
 
     }
-    catch{
-
+    catch(error){
+        console.error('Failed to get postss:', error);
+        res.status(500).json({ error: 'An error occurred while retrieving posts.' });
     }
 });
 
+app.post('/api/posts', async (req: Request, res: Response) => {
+    try {
+        const { caption, imageUrl, postType, userId } = req.body;
+        if (!caption || !postType || !userId) {
+            return res.status(400).json({ error: 'Caption, postType, and userId are required.' });
+        }
+        const newPost = await prisma.post.create({
+            data: {
+                caption,
+                imageUrl,
+                postType,
+                authorId: userId,
+            },
+            include: { author: true }
+            });
+        const publicAuthor: PublicUser = {
+            id: newPost.author.id,
+            username: newPost.author.username,
+            profilePicUrl: newPost.author.profilePicUrl
+        };
+        const postToSend: ApiPost = {
+            id: newPost.id,
+            caption: newPost.caption,
+            imageUrl: newPost.imageUrl || undefined,
+            postType: newPost.postType as ApiPostType,
+            createdAt: newPost.createdAt.toISOString(),
+            author: publicAuthor,
+
+            likeCount: 0,
+            commentCount: 0,
+            hasLiked: false
+        };
+        res.status(201).json(postToSend);
+
+    }
+    catch(error){
+        console.error('Failed to get posts:', error);
+        res.status(500).json({error: "An error occured creating the post."});
+    }
+});
 
 const PORT = 3000;
 app.listen(PORT, () => {
