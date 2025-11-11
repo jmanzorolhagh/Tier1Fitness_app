@@ -17,7 +17,17 @@ app.get('/api', (req: Request, res: Response) => {
 app.post('/api/users/create', async (req: Request, res: Response) => {
     try {
         const { email, username, password } = req.body;
-        
+        if (!email || !username || !password) {
+            return res.status(400).json({ error: 'Email, username, and password are required.' });
+        }
+
+        const existingUser = await prisma.user.findFirst({ 
+        where: { OR: [{ email }, { username }] }
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ error: 'User with this email or username already exists.' });
+        }
         const defaultProfilePic = `https://placehold.co/100x100/E2E2E2/000000?text=${username[0] || 'U'}`;
         
         const newUser = await prisma.user.create({
