@@ -216,6 +216,104 @@ app.get('/api/leaderboard', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/api/users/:id', async (req: Request, res: Response) => {
+    try{
+        const { id } = req.params;
+        const userFromDb = await prisma.user.findUnique({
+            where: { id },
+            include: {
+                posts: {
+                orderBy: { createdAt: 'desc' },
+                take: 5, 
+                include: { author: true } 
+                },
+            }
+        });
+        if (!userFromDb) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const healthDataFromDb = await prisma.healthData.findFirst({
+        where: {
+            userId: id,
+            date: today
+        },
+        include: { user: true }
+        });
+        const followerCount = Math.floor(Math.random() * 500); 
+        const followingCount = Math.floor(Math.random() * 200); 
+
+
+        let healthStatsToSend: ApiHealthData;
+        if (healthDataFromDb) {
+            healthStatsToSend = {
+                dataID: healthDataFromDb.id,
+                user: {
+                id: userFromDb.id,
+                username: userFromDb.username,
+                profilePicUrl: userFromDb.profilePicUrl
+                },
+                date: healthDataFromDb.date.toISOString(),
+                dailySteps: healthDataFromDb.dailySteps,
+                dailyCalories: healthDataFromDb.dailyCalories,
+                totalWorkouts: healthDataFromDb.totalWorkouts
+            };
+        } 
+        else {
+            healthStatsToSend = {
+                dataID: 'temp-id',
+                user: { id: userFromDb.id, username: userFromDb.username, profilePicUrl: userFromDb.profilePicUrl },
+                date: today.toISOString(),
+                dailySteps: 0,
+                dailyCalories: 0,
+                totalWorkouts: 0
+            };
+        }
+
+        // Translate Posts
+        const postsToSend: ApiPost[] = userFromDb.posts.map(post => {
+        const publicAuthor: ApiPublicUser = {
+            id: post.author.id,
+            username: post.author.username,
+            profilePicUrl: post.author.profilePicUrl
+        };
+        return {
+            id: post.id,
+            caption: post.caption,
+            imageUrl: post.imageUrl || undefined,
+            postType: post.postType as ApiPostType, // Cast Prisma type to API type
+            createdAt: post.createdAt.toISOString(),
+            author: publicAuthor,
+            likeCount: Math.floor(Math.random() * 50),
+            commentCount: Math.floor(Math.random() * 10),
+            hasLiked: Math.random() > 0.5,
+        };
+        });
+
+        // --- 5. Build the Final UserProfile Object ---
+        const profileToSend: ApiUserProfile = {
+        id: userFromDb.id,
+        username: userFromDb.username,
+        bio: userFromDb.bio || undefined,
+        joinedDate: userFromDb.createdAt.toISOString(),
+        profilePicUrl: userFromDb.profilePicUrl,
+        followerCount: followerCount,
+        followingCount: followingCount,
+        posts: postsToSend,
+        healthStats: healthStatsToSend
+        };
+
+        res.json(profileToSend);
+    }
+    catch(error){
+        console.error('Failed to get user profile:', error);
+        res.status(500).json({error: "An error occured getting the user profile."});
+
+    }
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(` Server is running on http://localhost:${PORT}`);
