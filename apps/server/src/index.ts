@@ -3,12 +3,13 @@ import cors from 'cors';
 import { Post, PostType, PrismaClient } from '@prisma/client';
 
 import { 
-  User, 
+  User as ApiUser, 
   Post as ApiPost,
   PostType as ApiPostType,
-  PublicUser, 
-  LeaderboardEntry, 
-  HealthData 
+  PublicUser as ApiPublicUser, 
+  LeaderboardEntry as ApiLeaderboardEntry, 
+  HealthData as ApiHealthData,
+  UserProfile as ApiUserProfile
 } from '@tier1fitness_app/types';
 
 const prisma = new PrismaClient();
@@ -47,7 +48,7 @@ app.post('/api/users/create', async (req: Request, res: Response) => {
     });
 
 
-    const userToReturn: User = {
+    const userToReturn: ApiUser = {
       id: newUser.id,
       username: newUser.username,
       email: newUser.email,
@@ -73,7 +74,7 @@ app.get('/api/posts', async (req: Request, res: Response) => {
             }
         });
         const postsToSend: ApiPost[] = postsFromDb.map(post => {
-            const publicAuthor: PublicUser = {
+            const publicAuthor: ApiPublicUser = {
                 id: post.author.id,
                 username: post.author.username,
                 profilePicUrl: post.author.profilePicUrl
@@ -118,7 +119,7 @@ app.post('/api/posts', async (req: Request, res: Response) => {
             },
             include: { author: true }
             });
-        const publicAuthor: PublicUser = {
+        const publicAuthor: ApiPublicUser = {
             id: newPost.author.id,
             username: newPost.author.username,
             profilePicUrl: newPost.author.profilePicUrl
@@ -181,6 +182,39 @@ app.post('/api/healthdata', async (req: Request, res: Response) => {
         res.status(500).json({error: "An error occured saving health data."});
     }
     });
+app.get('/api/leaderboard', async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const healthDataEntries = await prisma.healthData.findMany({
+      where: { date: today },
+      orderBy: { dailySteps: 'desc' },
+      take: 10,
+      include: { user: true } 
+    });
+
+    const leaderboard: ApiLeaderboardEntry[] = healthDataEntries.map((entry, index) => {
+      const publicUser: ApiPublicUser = {
+        id: entry.user.id,
+        username: entry.user.username,
+        profilePicUrl: entry.user.profilePicUrl
+      };
+
+      return {
+        rank: index + 1,
+        user: publicUser,
+        score: entry.dailySteps,
+      };
+    });
+
+    res.json(leaderboard);
+
+  } catch (error) {
+    console.error('Failed to get leaderboard:', error);
+    res.status(500).json({error: "An error occured getting the leaderboard."});
+  }
+});
 
 const PORT = 3000;
 app.listen(PORT, () => {
