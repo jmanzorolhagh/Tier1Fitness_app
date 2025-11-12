@@ -144,6 +144,44 @@ app.post('/api/posts', async (req: Request, res: Response) => {
     }
 });
 
+app.post('/api/healthdata', async (req: Request, res: Response) => {
+    try{
+        const { userId, steps, calories } = req.body;
+        if (!userId) {
+            return res.status(400).json({ error: 'userId is required.' });
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const healthData = await prisma.healthData.upsert({
+            where: {
+                userId_date: {
+                userId: userId,
+                date: today
+                }
+            },
+            
+            create: {
+                userId: userId,
+                date: today,
+                dailySteps: steps || 0,
+                dailyCalories: calories || 0,
+                totalWorkouts: 0 
+            },
+            
+            update: {
+                dailySteps: steps,
+                dailyCalories: calories
+            }
+            });
+
+        res.json(healthData);
+    }
+    catch(error){
+        console.error('Failed to save health data:', error);
+        res.status(500).json({error: "An error occured saving health data."});
+    }
+    });
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(` Server is running on http://localhost:${PORT}`);
