@@ -10,22 +10,15 @@ import { createStackNavigator } from '@react-navigation/stack';
 const Stack = createStackNavigator();
 
 export default function App() {
-  const userId = "123"; // mock user for now
+  const userId = "123";
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="postScreen">
-        <Stack.Screen 
-          name="postScreen" 
-          component={CommunityFeedScreen} 
-          options={{ title: 'Tier1Fitness Feed' }} 
-        />
-        <Stack.Screen 
-          name="CreatePost" 
-          options={{ title: 'Create Post' }}
-        >
-          {props => <CreatePostScreen {...props} userId={userId} />}
+      <Stack.Navigator initialRouteName="CommunityFeed" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="CreatePost">
+          {(props) => <CreatePostScreen {...props} userId={userId} />}
         </Stack.Screen>
+        <Stack.Screen name="CommunityFeed" component={CommunityFeedScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

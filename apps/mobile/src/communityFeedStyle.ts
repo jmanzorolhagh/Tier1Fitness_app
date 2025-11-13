@@ -1,70 +1,73 @@
 import { StyleSheet } from 'react-native';
 
-const styles = StyleSheet.create({
-    feedContainer: {
-        padding: 16,
-        backgroundColor: '#f2f4f7',
-    },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 1,
-    },
-    authorRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        marginRight: 12,
-    },
-    username: {
-        fontWeight: '600',
-        fontSize: 16,
-        color: '#111',
-    },
-    postSubtitle: {
-        color: '#777',
-        fontSize: 12,
-    },
-    postImage: {
-        width: '100%',
-        height: 200,
-        borderRadius: 8,
-        backgroundColor: '#eee',
-        marginBottom: 10,
-    },
-    imagePlaceholder: {
-        width: '100%',
-        height: 180,
-        borderRadius: 8,
-        backgroundColor: '#eef1f5',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    placeholderIcon: {
-        fontSize: 30,
-        color: '#bbb',
-    },
-    caption: {
-        fontSize: 14,
-        color: '#333',
-        lineHeight: 20,
-    },
-    centered: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+export default StyleSheet.create({
+  feedContainer: {
+    padding: 16,
+  },
+  card: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#4caf50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarInitial: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  username: {
+    fontWeight: '600',
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  timestamp: {
+    color: '#777',
+    fontSize: 12,
+  },
+  postImagePlaceholder: {
+    height: 120,
+    borderRadius: 10,
+    backgroundColor: '#e1e5ea',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  placeholderIcon: {
+    fontSize: 36,
+    color: '#777',
+  },
+  postText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#222',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#999',
+    marginTop: 20,
+  },
 });
-
-export default styles;

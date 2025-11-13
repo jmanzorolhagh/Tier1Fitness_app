@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import styles from './postScreenStyles';
 
- 
+
 
 const POST_TYPES = ["Workout", "Progress", "Photo"];
 
@@ -20,9 +20,6 @@ export default function CreatePostScreen({ userId }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ caption, imageUrl, postType, userId }),
       });
-      if (res.ok) {
-        
-      }
     } catch (e) {
     }
     setLoading(false);
