@@ -17,5 +17,15 @@
   ],
   "devDependencies": {
     "dotenv-cli": "^11.0.0"
+  },
+  "dependencies": {
+    "@react-navigation/bottom-tabs": "^7.8.4",
+    "@react-navigation/native": "^7.1.19",
+    "react-dom": "19.1.0",
+    "react-native-gesture-handler": "^2.29.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-vector-icons": "^10.3.0",
+    "react-native-web": "^0.21.0"
   }
 }
