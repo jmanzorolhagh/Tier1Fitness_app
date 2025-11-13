@@ -20,6 +20,9 @@ export default function CreatePostScreen({ userId }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ caption, imageUrl, postType, userId }),
       });
+      if (res.ok) {
+        
+      }
     } catch (e) {
     }
     setLoading(false);
@@ -64,3 +67,7 @@ export default function CreatePostScreen({ userId }) {
     </View>
   );
 }
+
+/*
+
+*/
