@@ -15,6 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.17.0",
+    "array-flatten": "^1.1.1",
     "cors": "^2.8.5",
     "dotenv-cli": "^7.4.2",
     "express": "^4.19.2"
