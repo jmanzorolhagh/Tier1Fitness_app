@@ -1,13 +1,25 @@
 import React from 'react';
-import { View } from 'react-native';
-import Leaderboard from './src/leaderboard';
-import CreatePostScreen from './src/postScreen';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppNavigator } from './src/navigation/AppNavigator';
+import { View, StyleSheet } from 'react-native';
+import { colors } from './src/theme/colors';
 
 export default function App() {
-    const id = "123"
   return (
-    <View style={{ flex: 1, paddingTop: 50 }}>;
-      <CreatePostScreen userId={id} />
-    </View>
+    <SafeAreaProvider>
+
+      <View style={styles.appContainer}>
+        <AppNavigator />
+        <StatusBar style="light" /> 
+      </View>
+    </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  appContainer: {
+    flex: 1,
+    backgroundColor: colors.text, 
+  }
+});
