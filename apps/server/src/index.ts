@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { Post, PostType, PrismaClient } from '@prisma/client';
+import { PrismaClient, PostType as PrismaPostType } from '@prisma/client';
+
 
 import { 
   User as ApiUser, 
@@ -14,39 +15,46 @@ import {
 
 const prisma = new PrismaClient();
 const app = express();
-
+const globalUserId = "cmhw533h40000v2pk92qrjsfe";
 app.use(cors());
 app.use(express.json());
+
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next(); 
+});
+
 
 app.get('/api', (req: Request, res: Response) => {
   res.json({ message: 'Tier1Fitness API is running!' });
 });
 
+
 app.post('/api/users/create', async (req: Request, res: Response) => {
-    try {
-        const { email, username, password } = req.body;
-        if (!email || !username || !password) {
-            return res.status(400).json({ error: 'Email, username, and password are required.' });
-        }
+  try {
+    const { email, username, password } = req.body;
+    if (!email || !username || !password) {
+      return res.status(400).json({ error: 'Email, username, and password are required.' });
+    }
 
-        const existingUser = await prisma.user.findFirst({ 
-        where: { OR: [{ email }, { username }] }
-        });
-
-        if (existingUser) {
-            return res.status(400).json({ error: 'User with this email or username already exists.' });
-        }
-        const defaultProfilePic = `https://placehold.co/100x100/E2E2E2/000000?text=${username[0] || 'U'}`;
-        
-        const newUser = await prisma.user.create({
-        data: {
-            email,
-            username,
-            passwordHash: password, // Storing plain text password
-            profilePicUrl: defaultProfilePic,
-        }
+    const existingUser = await prisma.user.findFirst({ 
+      where: { OR: [{ email }, { username }] }
     });
 
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this email or username already exists.' });
+    }
+    
+    const defaultProfilePic = `https://ui-avatars.com/api/?name=${username || 'U'}`;
+    
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        username,
+        passwordHash: password, 
+        profilePicUrl: defaultProfilePic,
+      }
+    });
 
     const userToReturn: ApiUser = {
       id: newUser.id,
@@ -54,141 +62,249 @@ app.post('/api/users/create', async (req: Request, res: Response) => {
       email: newUser.email,
       created: newUser.createdAt.toISOString()
     };
-
     res.status(201).json(userToReturn);
-
-}
-catch (error) {
+  } catch (error) {
     console.error('User creation failed:', error);
     res.status(500).json({ error: 'An error occurred while creating the user.' });
-}
-    
+  }
 });
+
+
+app.get('/api/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userFromDb = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        posts: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+        _count: { 
+          select: { followers: true, following: true }
+        }
+      }
+    });
+
+    if (!userFromDb) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const healthData = await prisma.healthData.findFirst({
+      where: {
+        userId: id,
+        date: {
+          gte: today, 
+          lt: tomorrow 
+        }
+      }
+    });
+
+    const healthStatsToSend: ApiHealthData = {
+      dataID: healthData?.id || 'temp-id',
+      user: {
+        id: userFromDb.id,
+        username: userFromDb.username,
+        profilePicUrl: userFromDb.profilePicUrl
+      },
+      date: (healthData?.date || today).toISOString(),
+      dailySteps: healthData?.dailySteps || 0,
+      dailyCalories: healthData?.dailyCalories || 0,
+      totalWorkouts: healthData?.totalWorkouts || 0,
+    };
+    
+    const postsToSend: ApiPost[] = userFromDb.posts.map(post => {
+      const author: ApiPublicUser = {
+        id: userFromDb.id,
+        username: userFromDb.username,
+        profilePicUrl: userFromDb.profilePicUrl
+      };
+      return {
+        id: post.id,
+        caption: post.caption,
+        imageUrl: post.imageUrl || undefined,
+        postType: post.postType as ApiPostType,
+        createdAt: post.createdAt.toISOString(),
+        author: author,
+        likeCount: 0, 
+        commentCount: 0, 
+        hasLiked: false 
+      };
+    });
+    
+    const profile: ApiUserProfile = {
+      id: userFromDb.id,
+      username: userFromDb.username,
+      bio: userFromDb.bio || undefined,
+      joinedDate: userFromDb.createdAt.toISOString(),
+      profilePicUrl: userFromDb.profilePicUrl,
+      followerCount: userFromDb._count.followers,
+      followingCount: userFromDb._count.following,
+      posts: postsToSend,
+      healthStats: healthStatsToSend
+    };
+    
+    res.json(profile);
+    
+  } catch (error) {
+    console.error(`Failed to get user ${req.params.id}:`, error);
+    res.status(500).json({ error: 'An error occurred while retrieving the user profile.' });
+  }
+});
+
 
 app.get('/api/posts', async (req: Request, res: Response) => {
-    try{
-        const postsFromDb = await prisma.post.findMany({
-            orderBy: { createdAt: 'desc' },
-            include: {
-            author: true,
-            }
-        });
-        const postsToSend: ApiPost[] = postsFromDb.map(post => {
-            const publicAuthor: ApiPublicUser = {
-                id: post.author.id,
-                username: post.author.username,
-                profilePicUrl: post.author.profilePicUrl
-            };
+  try {
+    const postsFromDb = await prisma.post.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: true, 
+        _count: { 
+          select: { likes: true, comments: true }
+        }
+      }
+    });
 
-            return {
-                id: post.id,
-                caption: post.caption,
-                imageUrl: post.imageUrl || undefined,
-                postType: post.postType as ApiPostType,
-                createdAt: post.createdAt.toISOString(),
-                author: publicAuthor,
+    const postsToSend: ApiPost[] = postsFromDb.map(post => {
+      const publicAuthor: ApiPublicUser = {
+        id: post.author.id,
+        username: post.author.username,
+        profilePicUrl: post.author.profilePicUrl
+      };
 
-                likeCount: Math.floor(Math.random() * 50),
-                commentCount: Math.floor(Math.random() * 10),
-                hasLiked: Math.random() > 0.5
-            };
-        });
+      return {
+        id: post.id,
+        caption: post.caption,
+        imageUrl: post.imageUrl || undefined,
+        postType: post.postType as ApiPostType, 
+        createdAt: post.createdAt.toISOString(),
+        author: publicAuthor,
+
+        likeCount: post._count.likes,
+        commentCount: post._count.comments,
         
+        hasLiked: Math.random() > 0.5 
+      };
+    });
+    
     res.json(postsToSend);
-
-
-    }
-    catch(error){
-        console.error('Failed to get postss:', error);
-        res.status(500).json({ error: 'An error occurred while retrieving posts.' });
-    }
+  } catch (error) {
+    console.error('Failed to get posts:', error);
+    res.status(500).json({ error: 'An error occurred while retrieving posts.' });
+  }
 });
+
 
 app.post('/api/posts', async (req: Request, res: Response) => {
-    try {
-        const { caption, imageUrl, postType, userId } = req.body;
-        if (!caption || !postType || !userId) {
-            return res.status(400).json({ error: 'Caption, postType, and userId are required.' });
-        }
-        const newPost = await prisma.post.create({
-            data: {
-                caption,
-                imageUrl,
-                postType,
-                authorId: userId,
-            },
-            include: { author: true }
-            });
-        const publicAuthor: ApiPublicUser = {
-            id: newPost.author.id,
-            username: newPost.author.username,
-            profilePicUrl: newPost.author.profilePicUrl
-        };
-        const postToSend: ApiPost = {
-            id: newPost.id,
-            caption: newPost.caption,
-            imageUrl: newPost.imageUrl || undefined,
-            postType: newPost.postType as ApiPostType,
-            createdAt: newPost.createdAt.toISOString(),
-            author: publicAuthor,
-
-            likeCount: 0,
-            commentCount: 0,
-            hasLiked: false
-        };
-        res.status(201).json(postToSend);
-
+  try {
+    const { caption, imageUrl, postType, userId } = req.body;
+    if (!caption || !postType || !userId) {
+      return res.status(400).json({ error: 'Caption, postType, and userId are required.' });
     }
-    catch(error){
-        console.error('Failed to get posts:', error);
-        res.status(500).json({error: "An error occured creating the post."});
+
+    const userExists = await prisma.user.findUnique({ where: { id: globalUserId }});
+    if (!userExists) {
+      return res.status(404).json({ error: 'Author user not found.' });
     }
+
+    const newPost = await prisma.post.create({
+      data: {
+        caption,
+        imageUrl,
+        postType,
+        authorId: userId,
+      },
+      include: { author: true } 
+    });
+    
+  
+    const publicAuthor: ApiPublicUser = {
+      id: newPost.author.id,
+      username: newPost.author.username,
+      profilePicUrl: newPost.author.profilePicUrl
+    };
+    
+    const postToSend: ApiPost = {
+      id: newPost.id,
+      caption: newPost.caption,
+      imageUrl: newPost.imageUrl || undefined,
+      postType: newPost.postType as ApiPostType,
+      createdAt: newPost.createdAt.toISOString(),
+      author: publicAuthor,
+      likeCount: 0,
+      commentCount: 0,
+      hasLiked: false
+    };
+    
+    res.status(201).json(postToSend);
+
+  } catch (error) {
+    console.error('Failed to create post:', error);
+    res.status(500).json({error: "An error occured creating the post."});
+  }
 });
 
-app.post('/api/healthdata', async (req: Request, res: Response) => {
-    try{
-        const { userId, steps, calories } = req.body;
-        if (!userId) {
-            return res.status(400).json({ error: 'userId is required.' });
-        }
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const healthData = await prisma.healthData.upsert({
-            where: {
-                userId_date: {
-                userId: userId,
-                date: today
-                }
-            },
-            
-            create: {
-                userId: userId,
-                date: today,
-                dailySteps: steps || 0,
-                dailyCalories: calories || 0,
-                totalWorkouts: 0 
-            },
-            
-            update: {
-                dailySteps: steps,
-                dailyCalories: calories
-            }
-            });
 
-        res.json(healthData);
-    }
-    catch(error){
-        console.error('Failed to save health data:', error);
-        res.status(500).json({error: "An error occured saving health data."});
-    }
-    });
-app.get('/api/leaderboard', async (req: Request, res: Response) => {
+
+app.post('/api/healthdata', async (req: Request, res: Response) => {
   try {
+    const { userId, steps, calories } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required.' });
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const healthData = await prisma.healthData.upsert({
+      where: {
+        userId_date: {
+          userId: userId,
+          date: today
+        }
+      },
+      update: {
+        dailySteps: steps,
+        dailyCalories: calories
+      },
+      create: {
+        userId: userId,
+        date: today,
+        dailySteps: steps || 0,
+        dailyCalories: calories || 0,
+        totalWorkouts: 0 
+      }
+    });
+
+    res.json(healthData);
+  } catch (error) {
+    console.error('Failed to save health data:', error);
+    res.status(500).json({error: "An error occured saving health data."});
+  }
+});
+
+
+app.get('/api/leaderboard', async (req: Request, res: Response) => {
+  try {
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
     const healthDataEntries = await prisma.healthData.findMany({
-      where: { date: today },
+      where: {
+        date: {
+          gte: today, 
+          lt: tomorrow 
+        }
+      },
       orderBy: { dailySteps: 'desc' },
       take: 10,
       include: { user: true } 
@@ -200,14 +316,14 @@ app.get('/api/leaderboard', async (req: Request, res: Response) => {
         username: entry.user.username,
         profilePicUrl: entry.user.profilePicUrl
       };
-
+      
       return {
         rank: index + 1,
         user: publicUser,
         score: entry.dailySteps,
       };
     });
-
+    
     res.json(leaderboard);
 
   } catch (error) {
@@ -216,106 +332,7 @@ app.get('/api/leaderboard', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/users/:id', async (req: Request, res: Response) => {
-    try{
-        const { id } = req.params;
-        const userFromDb = await prisma.user.findUnique({
-            where: { id },
-            include: {
-                posts: {
-                orderBy: { createdAt: 'desc' },
-                take: 5, 
-                include: { author: true } 
-                },
-            }
-        });
-        if (!userFromDb) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const healthDataFromDb = await prisma.healthData.findFirst({
-        where: {
-            userId: id,
-            date: today
-        },
-        include: { user: true }
-        });
-        const followerCount = Math.floor(Math.random() * 500); 
-        const followingCount = Math.floor(Math.random() * 200); 
-
-
-        let healthStatsToSend: ApiHealthData;
-        if (healthDataFromDb) {
-            healthStatsToSend = {
-                dataID: healthDataFromDb.id,
-                user: {
-                id: userFromDb.id,
-                username: userFromDb.username,
-                profilePicUrl: userFromDb.profilePicUrl
-                },
-                date: healthDataFromDb.date.toISOString(),
-                dailySteps: healthDataFromDb.dailySteps,
-                dailyCalories: healthDataFromDb.dailyCalories,
-                totalWorkouts: healthDataFromDb.totalWorkouts
-            };
-        } 
-        else {
-            healthStatsToSend = {
-                dataID: 'temp-id',
-                user: { id: userFromDb.id, username: userFromDb.username, profilePicUrl: userFromDb.profilePicUrl },
-                date: today.toISOString(),
-                dailySteps: 0,
-                dailyCalories: 0,
-                totalWorkouts: 0
-            };
-        }
-
-        // Translate Posts
-        const postsToSend: ApiPost[] = userFromDb.posts.map(post => {
-        const publicAuthor: ApiPublicUser = {
-            id: post.author.id,
-            username: post.author.username,
-            profilePicUrl: post.author.profilePicUrl
-        };
-        return {
-            id: post.id,
-            caption: post.caption,
-            imageUrl: post.imageUrl || undefined,
-            postType: post.postType as ApiPostType, // Cast Prisma type to API type
-            createdAt: post.createdAt.toISOString(),
-            author: publicAuthor,
-            likeCount: Math.floor(Math.random() * 50),
-            commentCount: Math.floor(Math.random() * 10),
-            hasLiked: Math.random() > 0.5,
-        };
-        });
-
-        // --- 5. Build the Final UserProfile Object ---
-        const profileToSend: ApiUserProfile = {
-        id: userFromDb.id,
-        username: userFromDb.username,
-        bio: userFromDb.bio || undefined,
-        joinedDate: userFromDb.createdAt.toISOString(),
-        profilePicUrl: userFromDb.profilePicUrl,
-        followerCount: followerCount,
-        followingCount: followingCount,
-        posts: postsToSend,
-        healthStats: healthStatsToSend
-        };
-
-        res.json(profileToSend);
-    }
-    catch(error){
-        console.error('Failed to get user profile:', error);
-        res.status(500).json({error: "An error occured getting the user profile."});
-
-    }
-});
-
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(` Server is running on http://localhost:${PORT}`);
 });
-
