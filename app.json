@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "b369e237-e0ca-4876-b505-88f2fb34a68e"
+      }
+    },
+    "android": {
+      "package": "com.jmanzorolhagh.tier1fitness_app"
+    }
+  }
+}
