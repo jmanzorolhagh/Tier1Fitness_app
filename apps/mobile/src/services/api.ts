@@ -1,5 +1,5 @@
 
-const API_BASE_URL = 'http://PERSONALIP:3000/api';
+const API_BASE_URL = 'https://tier1fitness-app.onrender.com/api'; 
 
 export const MY_DEMO_USER_ID = 'cmhw533h40000v2pk92qrjsfe'; 
 
