@@ -8,6 +8,7 @@
     "dev": "npx dotenv -- npx nodemon --exec npx ts-node src/index.ts",
     "db:migrate": "npx dotenv -- npx prisma migrate dev",
     "start": "node dist/apps/server/src/index.js",
+    "build": "npx tsc",
     "db:generate": "npx dotenv -- npx prisma generate",
     "db:studio": "npx dotenv -- npx prisma studio"
   },
