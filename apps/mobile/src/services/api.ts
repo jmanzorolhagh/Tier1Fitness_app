@@ -1,7 +1,7 @@
 
 const API_BASE_URL = 'http://PERSONALIP:3000/api';
 
-export const MY_DEMO_USER_ID = 'YOUR_HARDCODED_USER_ID_FROM_PRISMA'; 
+export const MY_DEMO_USER_ID = 'cmhw533h40000v2pk92qrjsfe'; 
 
 
 
