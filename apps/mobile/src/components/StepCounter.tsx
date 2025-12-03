@@ -1,177 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Linking, 
-  AppState 
-} from 'react-native';
 import { Pedometer } from 'expo-sensors';
-import { colors } from '../theme/colors';
-import api, { MY_DEMO_USER_ID } from '../services/api';
+import { Alert, Linking, AppState } from 'react-native'; // Added Linking
+import api from '../services/api';
+import { UserService } from '../services/userService';
 
-export const StepCounter = () => {
-  const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
-  const [permissionStatus, setPermissionStatus] = useState('undetermined');
-  const [pastStepCount, setPastStepCount] = useState(0);
-  const [currentStepCount, setCurrentStepCount] = useState(0);
+interface StepData {
+  currentSteps: number;
+  calories: number;
+  distance: number;
+}
 
-  const checkPermissionAndSubscribe = async () => {
-    const isAvailable = await Pedometer.isAvailableAsync();
-    setIsPedometerAvailable(String(isAvailable));
-    if (!isAvailable) {
-      setPermissionStatus('unavailable');
-      return;
-    }
+interface StepCounterProps {
+  onDataUpdate: (data: StepData) => void;
+}
 
-    const { status } = await Pedometer.getPermissionsAsync();
-    setPermissionStatus(status);
-
-    if (status === 'granted') {
-      const end = new Date();
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      const pastSteps = await Pedometer.getStepCountAsync(start, end);
-      if (pastSteps) {
-        setPastStepCount(pastSteps.steps);
-        sendStepsToApi(pastSteps.steps); 
-      }
-
-      return Pedometer.watchStepCount(result => {
-        setCurrentStepCount(result.steps);
-      });
-    }
+export const StepCounter: React.FC<StepCounterProps> = ({ onDataUpdate }) => {
+  const [historySteps, setHistorySteps] = useState(0);
+  
+  const updateParent = (history: number, current: number) => {
+    const total = history + current;
+    const calories = Math.floor(total * 0.04);
+    const distance = parseFloat((total * 0.0008).toFixed(2));
+    onDataUpdate({ currentSteps: total, calories, distance });
+    syncToBackend(total);
   };
 
-  useEffect(() => {
-    let subscription: Pedometer.Subscription | undefined;
-
-    checkPermissionAndSubscribe().then(sub => {
-      subscription = sub;
-    });
-
-    const appStateSubscription = AppState.addEventListener('change', nextAppState => {
-      if (nextAppState === 'active') {
-        console.log('App has come to the foreground, re-checking permissions...');
-        checkPermissionAndSubscribe().then(sub => {
-          subscription = sub;
-        });
-      }
-    });
-
-    return () => {
-      subscription?.remove();
-      appStateSubscription.remove();
-    };
-  }, []); 
-
-
-  const sendStepsToApi = async (steps: number) => {
-
-    if (MY_DEMO_USER_ID === 'YOUR_HARDCODED_USER_ID' || !MY_DEMO_USER_ID) {
-      console.warn('StepCounter: MY_DEMO_USER_ID is not set in api.ts. Steps will not be saved.');
-      return;
-    }
+  const syncToBackend = async (steps: number) => {
+    if (steps === 0) return;
+    const user = await UserService.getUser();
+    if (!user) return;
     try {
       await api.post('/healthdata', {
-        userId: MY_DEMO_USER_ID,
+        userId: user.id,
         steps: steps,
-        calories: Math.floor(steps * 0.04), 
+        calories: Math.floor(steps * 0.04),
       });
-      console.log(`Successfully saved ${steps} steps to the database.`);
-    } catch (error) {
-      console.error('Failed to save steps to API:', error);
+    } catch (e) {
+      // Fail silently
     }
   };
-  
+
+  const showSettingsAlert = () => {
+    Alert.alert(
+      "Permission Required",
+      "Step tracking is currently blocked. Please go to Settings > Permissions and allow 'Physical Activity' or 'Motion' access.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Open Settings", onPress: () => Linking.openSettings() }
+      ]
+    );
+  };
+
   useEffect(() => {
-    const totalSteps = pastStepCount + currentStepCount;
-    if (totalSteps === 0) return; 
+    let subscription: Pedometer.Subscription | null = null;
 
-    const interval = setInterval(() => {
-      sendStepsToApi(totalSteps);
-    }, 30000); 
+    const startTracking = async () => {
+      try {
+        const isAvailable = await Pedometer.isAvailableAsync();
+        console.log('[Pedometer] Available:', isAvailable);
+        
+        if (!isAvailable) return;
 
-    return () => clearInterval(interval);
-  }, [pastStepCount, currentStepCount]);
+        // requestPermissionsAsync will return the current status if already decided
+        const perm = await Pedometer.requestPermissionsAsync();
+        console.log('[Pedometer] Permission:', perm.status);
 
+        if (perm.status !== 'granted') {
+          // If denied, show the manual fix dialog
+          showSettingsAlert();
+          return;
+        }
 
+        // --- Permission Granted: Start Tracking ---
 
-  if (permissionStatus === 'undetermined' || isPedometerAvailable === 'checking') {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.infoText}>Checking permissions...</Text>
-      </View>
-    );
-  }
+        const end = new Date();
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
 
-  if (permissionStatus === 'unavailable') {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.infoText}>Step tracking is not available on this device.</Text>
-      </View>
-    );
-  }
+        const pastResult = await Pedometer.getStepCountAsync(start, end);
+        setHistorySteps(pastResult.steps);
+        updateParent(pastResult.steps, 0);
 
-  if (permissionStatus === 'denied') {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.infoText}>Motion permission is required to track steps.</Text>
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={() => Linking.openSettings()} 
-        >
-          <Text style={styles.buttonText}>Grant Access in Settings</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+        subscription = Pedometer.watchStepCount(result => {
+          updateParent(pastResult.steps, result.steps);
+        });
 
-  const totalSteps = pastStepCount + currentStepCount;
+      } catch (error) {
+        console.log('[Pedometer] Error:', error);
+      }
+    };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Steps Today</Text>
-      <Text style={styles.stepCount}>{totalSteps.toLocaleString()}</Text>
-    </View>
-  );
+    startTracking();
+
+    return () => {
+      if (subscription) subscription.remove();
+    };
+  }, []);
+
+  return null;
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    margin: 15,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  stepCount: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginTop: 5,
-  },
-  infoText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center'
-  },
-  button: {
-    marginTop: 15,
-    backgroundColor: colors.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  }
-});
