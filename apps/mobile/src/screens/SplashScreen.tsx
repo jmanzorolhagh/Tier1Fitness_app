@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import styles from './SplashScreenStyles';
 import { colors } from '../theme/colors';
-import api from '../services/api';
+import api, { MY_DEMO_USER_ID } from '../services/api'; // Import the ID
 import { UserService } from '../services/userService';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,7 +24,7 @@ import { User } from '@tier1fitness_app/types';
 type SplashNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
 
 export const SplashScreen = () => {
-  const [isLogin, setIsLogin] = useState(false); // Toggle between Login and Signup
+  const [isLogin, setIsLogin] = useState(false);
   
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -50,42 +50,34 @@ export const SplashScreen = () => {
 
       if (isLogin) {
         console.log('Attempting Login:', email);
-        user = await api.post('/login', {
-          email,
-          password,
-        });
+        user = await api.post('/login', { email, password });
       } else {
         console.log('Attempting Sign Up:', email);
-        user = await api.post('/users/create', {
-          username,
-          email,
-          password,
-        });
+        user = await api.post('/users/create', { username, email, password });
       }
 
       console.log('Auth Success:', user);
-
       await UserService.saveUser(user);
-
       navigation.replace('Tabs');
 
     } catch (e: any) {
       const message = e.message || 'An error occurred';
-      if (message.includes('404') && isLogin) {
-        Alert.alert('Login Failed', 'User not found. Check your email or Sign Up.');
-      } else if (message.includes('401')) {
-        Alert.alert('Login Failed', 'Incorrect password.');
-      } else if (message.includes('409')) {
-        Alert.alert('Sign Up Failed', 'That email or username is already taken.');
-      } else {
-        Alert.alert('Error', message);
-      }
+      Alert.alert('Error', message);
     } finally {
       setLoading(false);
     }
   };
+  const handleSkip = async () => {
+    const guestUser: User = {
+      id: MY_DEMO_USER_ID,
+      username: 'DemoUser',
+      email: 'demo@tier1fitness.com',
+      created: new Date().toISOString(),
+    };
 
-  const handleSkip = () => {
+    console.log('Skipping login... defaulting to Demo User:', guestUser.id);
+    
+    await UserService.saveUser(guestUser);
     navigation.replace('Tabs');
   };
 
@@ -161,10 +153,9 @@ export const SplashScreen = () => {
           )}
         </TouchableOpacity>
 
-        {/* Toggle Mode Button */}
         <TouchableOpacity onPress={toggleMode} style={{ marginTop: 20, padding: 10 }}>
           <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
-            {isLogin ? "Don't have an account?" : "Already have an account? "}
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
             <Text style={{ color: colors.primary, fontWeight: 'bold' }}>
               {isLogin ? 'Sign Up     ' : 'Log In     '}
             </Text>
@@ -172,7 +163,7 @@ export const SplashScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipButtonText}>Skip for now</Text>
+          <Text style={styles.skipButtonText}>Skip for now (Guest Mode)</Text>
         </TouchableOpacity>
 
       </ScrollView>
