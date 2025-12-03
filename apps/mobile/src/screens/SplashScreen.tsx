@@ -121,6 +121,7 @@ export const SplashScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Username"
+            placeholderTextColor={colors.textSecondary}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -130,6 +131,7 @@ export const SplashScreen = () => {
         <TextInput
           style={styles.input}
           placeholder="Email"
+          placeholderTextColor={colors.textSecondary}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -139,6 +141,7 @@ export const SplashScreen = () => {
         <TextInput
           style={styles.input}
           placeholder="Password"
+          placeholderTextColor={colors.textSecondary}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
