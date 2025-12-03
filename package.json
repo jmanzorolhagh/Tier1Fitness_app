@@ -17,5 +17,8 @@
   ],
   "devDependencies": {
     "dotenv-cli": "^11.0.0"
+  },
+  "dependencies": {
+    "expo-dev-client": "~6.0.18"
   }
 }
