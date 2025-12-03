@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   FlatList,
   Text,
   ActivityIndicator,
   RefreshControl,
+  StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native'; // <--- IMPORT THIS
 import { Post } from '@tier1fitness_app/types';
 import { PostCard } from '../components/PostCard';
 import { StepCounter } from '../components/StepCounter';
@@ -24,25 +26,27 @@ export const HomeFeedScreen = () => {
   const insets = useSafeAreaInsets();
 
   const fetchPosts = useCallback(async () => {
-    if (!refreshing) {
-      setLoading(true);
-    }
     setError(null);
-
     try {
       const data: Post[] = await api.get('/posts');
       setPosts(data);
     } catch (e: any) {
+      console.error("Fetch error:", e);
       setError(e.message || 'An error occurred');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing]);
+  }, []);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+  useFocusEffect(
+    useCallback(() => {
+      if (posts.length === 0) {
+        setLoading(true);
+      }
+      fetchPosts();
+    }, [fetchPosts]) // removed posts.length dependency to avoid infinite loops, relying on navigation focus
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -50,16 +54,16 @@ export const HomeFeedScreen = () => {
   }, [fetchPosts]);
 
   const renderContent = () => {
-    if (loading && !refreshing) {
+    if (loading && !refreshing && posts.length === 0) {
       return (
         <View style={styles.centerAll}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading your feed.....     </Text>
+          <Text style={styles.loadingText}>Loading your feed...</Text>
         </View>
       );
     }
 
-    if (error) {
+    if (error && posts.length === 0) {
       return (
         <View style={styles.centerAll}>
           <Ionicons name="alert-circle" size={28} color={colors.accent} />
