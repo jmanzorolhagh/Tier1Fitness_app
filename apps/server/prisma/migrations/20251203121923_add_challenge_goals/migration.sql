@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Challenge" ADD COLUMN     "goalType" TEXT NOT NULL DEFAULT 'STEPS',
+ADD COLUMN     "goalValue" INTEGER NOT NULL DEFAULT 10000;

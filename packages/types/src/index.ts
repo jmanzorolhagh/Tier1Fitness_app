@@ -79,7 +79,6 @@ export interface HealthData {
   totalWorkouts: number;
 }
 
-
 export interface Challenge {
   id: string;
   title: string;
@@ -88,20 +87,19 @@ export interface Challenge {
   startDate: string;
   endDate: string;
   participantCount: number;
+  goalType: 'STEPS' | 'CALORIES';
+  goalValue: number;
 }
-
 
 export interface ChallengeParticipant {
   user: PublicUser; 
   progress: 'completed' | 'in progress';
 }
 
-
 export interface ChallengeDetails extends Challenge {
   isPublic: boolean;
   participants: ChallengeParticipant[];
 }
-
 
 export interface LeaderboardEntry {
   rank: number;
