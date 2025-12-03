@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { PrismaClient, PostType as PrismaPostType } from '@prisma/client';
 
+// Shared types
 import { 
   User as ApiUser, 
   Post as ApiPost,
@@ -9,7 +10,7 @@ import {
   PublicUser as ApiPublicUser, 
   LeaderboardEntry as ApiLeaderboardEntry, 
   HealthData as ApiHealthData,
-  UserProfile as ApiUserProfile
+  UserProfile as ApiUserProfile,
 } from '@tier1fitness_app/types';
 
 const prisma = new PrismaClient();
@@ -18,6 +19,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Logger
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next(); 
@@ -30,6 +32,7 @@ app.get('/api', (req: Request, res: Response) => {
   res.json({ message: 'Tier1Fitness API is running!' });
 });
 
+// 1. Login User (Simple Version)
 app.post('/api/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -38,7 +41,6 @@ app.post('/api/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Email and password required" });
     }
 
-    // Find user by email
     const user = await prisma.user.findUnique({ where: { email } });
     
     if (!user) {
@@ -107,6 +109,7 @@ app.post('/api/users/create', async (req: Request, res: Response) => {
   }
 });
 
+// 3. Get User Profile
 app.get('/api/users/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -238,7 +241,6 @@ app.post('/api/posts', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Caption, postType, and userId are required.' });
     }
 
-
     const newPost = await prisma.post.create({
       data: {
         caption,
@@ -341,7 +343,113 @@ app.get('/api/leaderboard', async (req: Request, res: Response) => {
   }
 });
 
+// --- 8. CHALLENGES (UPDATED) ---
+
+// Get Active Challenges
+app.get('/api/challenges', async (req: Request, res: Response) => {
+  try {
+    const challenges = await prisma.challenge.findMany({
+      where: { isPublic: true },
+      include: {
+        creator: true,
+        participants: true,
+      },
+      orderBy: { startDate: 'desc' }
+    });
+
+    const response = challenges.map(c => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      startDate: c.startDate.toISOString(),
+      endDate: c.endDate.toISOString(),
+      participantCount: c.participants.length,
+      // --- NEW FIELDS MAPPED ---
+      goalType: c.goalType,
+      goalValue: c.goalValue,
+      // -------------------------
+      creator: {
+        id: c.creator.id,
+        username: c.creator.username,
+        profilePicUrl: c.creator.profilePicUrl
+      }
+    }));
+
+    res.json(response);
+  } catch (error) {
+    console.error('Failed to get challenges:', error);
+    res.status(500).json({ error: "Failed to fetch challenges" });
+  }
+});
+
+// Create Challenge
+app.post('/api/challenges', async (req: Request, res: Response) => {
+  try {
+    const { title, description, startDate, endDate, creatorId, goalType, goalValue } = req.body;
+
+    if (!title || !creatorId) {
+      return res.status(400).json({ error: "Title and Creator ID required" });
+    }
+
+    const newChallenge = await prisma.challenge.create({
+      data: {
+        title,
+        description: description || "",
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        creatorId,
+        isPublic: true,
+        // --- NEW FIELDS SAVED ---
+        goalType: goalType || "STEPS",
+        goalValue: goalValue || 10000,
+        // -------------------------
+      }
+    });
+
+    // Auto-join the creator
+    await prisma.challengeParticipant.create({
+      data: {
+        userId: creatorId,
+        challengeId: newChallenge.id
+      }
+    });
+
+    console.log(`Challenge created: ${title}`);
+    res.status(201).json(newChallenge);
+  } catch (error) {
+    console.error('Failed to create challenge:', error);
+    res.status(500).json({ error: "Failed to create challenge" });
+  }
+});
+
+// Join Challenge
+app.post('/api/challenges/join', async (req: Request, res: Response) => {
+  try {
+    const { userId, challengeId } = req.body;
+
+    // Check if already joined
+    const existing = await prisma.challengeParticipant.findUnique({
+      where: {
+        userId_challengeId: { userId, challengeId }
+      }
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: "Already joined this challenge" });
+    }
+
+    await prisma.challengeParticipant.create({
+      data: { userId, challengeId }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Failed to join challenge:', error);
+    res.status(500).json({ error: "Failed to join" });
+  }
+});
+
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on http://0.0.0.0:${PORT}`);
+  console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
 });
