@@ -448,7 +448,42 @@ app.post('/api/challenges/join', async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to join" });
   }
 });
+app.post('/api/posts/like', async (req: Request, res: Response) => {
+  try {
+    const { userId, postId } = req.body;
 
+    const existingLike = await prisma.like.findUnique({
+      where: {
+        userId_postId: { userId, postId }
+      }
+    });
+
+    if (existingLike) {
+      await prisma.like.delete({
+        where: {
+          userId_postId: { userId, postId }
+        }
+      });
+    } else {
+      await prisma.like.create({
+        data: { userId, postId }
+      });
+    }
+
+    const newCount = await prisma.like.count({
+      where: { postId }
+    });
+
+    res.json({ 
+      liked: !existingLike, 
+      newCount 
+    });
+
+  } catch (error) {
+    console.error('Failed to toggle like:', error);
+    res.status(500).json({ error: "Failed to like post" });
+  }
+});
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);

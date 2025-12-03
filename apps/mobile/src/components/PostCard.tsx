@@ -1,32 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { View, Text, Image, useWindowDimensions } from 'react-native';
+import { View, Text, Image, useWindowDimensions, TouchableOpacity } from 'react-native';
 import { Post, PostType } from '@tier1fitness_app/types';
 import { styles } from './PostCardStyles';
 import { colors } from '../theme/colors';
+import api from '../services/api';
+import { UserService } from '../services/userService';
 
 type PostCardProps = {
   post: Post;
 };
 
-// Helper: Get Color & Icon based on Post Type
 const getPostTypeDetails = (type: PostType) => {
   switch (type) {
     case PostType.WORKOUT:
-      return { label: 'Workout', color: '#3B82F6', icon: 'barbell-outline' }; // Blue
+      return { label: 'Workout', color: '#3B82F6', icon: 'barbell-outline' };
     case PostType.MILESTONE:
-      return { label: 'Milestone', color: '#F59E0B', icon: 'trophy-outline' }; // Gold
+      return { label: 'Milestone', color: '#F59E0B', icon: 'trophy-outline' };
     case PostType.MOTIVATION:
-      return { label: 'Motivation', color: '#8B5CF6', icon: 'flame-outline' }; // Purple
+      return { label: 'Motivation', color: '#8B5CF6', icon: 'flame-outline' };
     case PostType.PROGRESS_PHOTO:
-      return { label: 'Progress', color: '#10B981', icon: 'camera-outline' }; // Green
+      return { label: 'Progress', color: '#10B981', icon: 'camera-outline' };
     case PostType.CHALLENGE_UPDATE:
-      return { label: 'Challenge', color: '#EF4444', icon: 'flash-outline' }; // Red
+      return { label: 'Challenge', color: '#EF4444', icon: 'flash-outline' };
     default:
-      return { label: 'General', color: '#6B7280', icon: 'pricetag-outline' }; // Gray
+      return { label: 'General', color: '#6B7280', icon: 'pricetag-outline' };
   }
 };
 
+// Helper: Format date to "2h ago", "5m ago", etc.
 const formatTimeAgo = (isoDate: string) => {
   const diff = (Date.now() - new Date(isoDate).getTime()) / 1000;
   if (diff < 60) return `${Math.floor(diff)}s ago`;
@@ -39,8 +41,40 @@ export const PostCard = ({ post }: PostCardProps) => {
   const { width } = useWindowDimensions();
   const hasImage = post.imageUrl;
   const timeAgo = formatTimeAgo(post.createdAt);
-  
   const typeDetails = getPostTypeDetails(post.postType);
+
+  const [isLiked, setIsLiked] = useState(post.hasLiked);
+  const [likeCount, setLikeCount] = useState(post.likeCount);
+
+  useEffect(() => {
+    setIsLiked(post.hasLiked);
+    setLikeCount(post.likeCount);
+  }, [post]);
+
+  const handleLike = async () => {
+    const user = await UserService.getUser();
+    if (!user) return; // Ideally show a login prompt here
+
+    const previousLikedState = isLiked;
+    setIsLiked(!isLiked);
+    setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+
+    try {
+      // 2. Network Request
+      const response = await api.post('/posts/like', {
+        userId: user.id,
+        postId: post.id
+      });
+      
+      setIsLiked(response.liked);
+      setLikeCount(response.newCount);
+      
+    } catch (error) {
+      console.error("Like failed", error);
+      setIsLiked(previousLikedState);
+      setLikeCount(prev => previousLikedState ? prev + 1 : prev - 1);
+    }
+  };
 
   return (
     <View style={styles.card}>
@@ -59,7 +93,6 @@ export const PostCard = ({ post }: PostCardProps) => {
         </View>
       </View>
 
-      {/* Caption is moved ABOVE image for better context reading */}
       <View style={styles.captionContainer}>
         <Text style={styles.caption}>
           {post.caption}
@@ -74,14 +107,21 @@ export const PostCard = ({ post }: PostCardProps) => {
       )}
 
       <View style={styles.actionBar}>
-        <View style={styles.actionItem}>
+        <TouchableOpacity 
+          style={styles.actionItem} 
+          onPress={handleLike}
+          activeOpacity={0.7}
+        >
           <Ionicons
-            name={post.hasLiked ? "heart" : "heart-outline"}
+            name={isLiked ? "heart" : "heart-outline"}
             size={24}
-            color={post.hasLiked ? colors.accent : colors.text}
+            color={isLiked ? colors.accent : colors.text}
           />
-          <Text style={styles.actionText}>{post.likeCount}</Text>
-        </View>
+          <Text style={[styles.actionText, isLiked && { color: colors.accent }]}>
+            {likeCount}
+          </Text>
+        </TouchableOpacity>
+
         <View style={styles.actionItem}>
           <Feather name="message-circle" size={24} color={colors.text} />
           <Text style={styles.actionText}>{post.commentCount}</Text>
