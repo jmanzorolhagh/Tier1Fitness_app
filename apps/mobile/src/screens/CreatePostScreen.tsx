@@ -54,6 +54,9 @@ export function CreatePostScreen() {
     } catch (e: any) {
       Alert.alert('Post Failed', e.message);
     }
+    setPostType(PostType.WORKOUT);
+    setCaption('');
+    setImageUrl('');
     setLoading(false);
   };
 
