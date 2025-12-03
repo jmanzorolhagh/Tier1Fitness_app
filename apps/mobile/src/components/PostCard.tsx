@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { View, Text, Image, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Post, PostType } from '@tier1fitness_app/types';
 import { styles } from './PostCardStyles';
 import { colors } from '../theme/colors';
 import api from '../services/api';
 import { UserService } from '../services/userService';
+import { RootStackParamList } from '../navigation/AppNavigator';
 
 type PostCardProps = {
   post: Post;
 };
 
+// Define navigation type to access the 'Profile' route
+type PostCardNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+// Helper: Visual styles for different post categories
 const getPostTypeDetails = (type: PostType) => {
   switch (type) {
     case PostType.WORKOUT:
@@ -28,7 +35,7 @@ const getPostTypeDetails = (type: PostType) => {
   }
 };
 
-// Helper: Format date to "2h ago", "5m ago", etc.
+// Helper: Format date
 const formatTimeAgo = (isoDate: string) => {
   const diff = (Date.now() - new Date(isoDate).getTime()) / 1000;
   if (diff < 60) return `${Math.floor(diff)}s ago`;
@@ -39,6 +46,8 @@ const formatTimeAgo = (isoDate: string) => {
 
 export const PostCard = ({ post }: PostCardProps) => {
   const { width } = useWindowDimensions();
+  const navigation = useNavigation<PostCardNavigationProp>();
+  
   const hasImage = post.imageUrl;
   const timeAgo = formatTimeAgo(post.createdAt);
   const typeDetails = getPostTypeDetails(post.postType);
@@ -53,22 +62,19 @@ export const PostCard = ({ post }: PostCardProps) => {
 
   const handleLike = async () => {
     const user = await UserService.getUser();
-    if (!user) return; // Ideally show a login prompt here
+    if (!user) return; 
 
     const previousLikedState = isLiked;
     setIsLiked(!isLiked);
     setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
 
     try {
-      // 2. Network Request
       const response = await api.post('/posts/like', {
         userId: user.id,
         postId: post.id
       });
-      
       setIsLiked(response.liked);
       setLikeCount(response.newCount);
-      
     } catch (error) {
       console.error("Like failed", error);
       setIsLiked(previousLikedState);
@@ -76,15 +82,28 @@ export const PostCard = ({ post }: PostCardProps) => {
     }
   };
 
+  // --- NAVIGATION HANDLER ---
+  const goToProfile = () => {
+    navigation.navigate('Profile', { userId: post.author.id });
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Image source={{ uri: post.author.profilePicUrl }} style={styles.avatar} />
+        {/* Clickable Avatar */}
+        <TouchableOpacity onPress={goToProfile}>
+          <Image source={{ uri: post.author.profilePicUrl }} style={styles.avatar} />
+        </TouchableOpacity>
+        
         <View style={styles.headerText}>
-          <Text style={styles.username}>{post.author.username}</Text>
+          {/* Clickable Name */}
+          <TouchableOpacity onPress={goToProfile}>
+            <Text style={styles.username}>{post.author.username}</Text>
+          </TouchableOpacity>
           <Text style={styles.timestamp}>{timeAgo}</Text> 
         </View>
         
+        {/* Post Type Tag */}
         <View style={[styles.badge, { backgroundColor: typeDetails.color + '20' }]}> 
           <Ionicons name={typeDetails.icon as any} size={12} color={typeDetails.color} style={{ marginRight: 4 }} />
           <Text style={[styles.badgeText, { color: typeDetails.color }]}>
