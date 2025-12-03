@@ -34,6 +34,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
   },
+   challengePostCard: {
+    borderWidth: 2,        
+    borderColor: 'rgba(239, 183, 16, 0.94)',     
+    borderRadius: 15,
+    marginHorizontal: 10,
+    marginVertical: 10,
+  },
+   
 });
+
 
 export default styles;

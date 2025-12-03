@@ -14,6 +14,7 @@ import { colors } from '../theme/colors';
 import styles from './HomeFeedScreenStyles';
 import api from '../services/api';
 import { Ionicons } from '@expo/vector-icons';
+import { PostType } from '@tier1fitness_app/types';
 
 export const HomeFeedScreen = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -71,12 +72,24 @@ export const HomeFeedScreen = () => {
     return (
       <FlatList
         data={posts}
-        renderItem={({ item }) => <PostCard post={item} />}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              item.postType === PostType.CHALLENGE_UPDATE && styles.challengePostCard,
+            ]}
+          >
+            <PostCard post={item} />
+          </View>
+        )}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={<StepCounter />}
         ListEmptyComponent={() => (
           <View style={styles.centerAll}>
-            <Ionicons name="chatbubble-ellipses-outline" size={28} color={colors.textSecondary} />
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={28}
+              color={colors.textSecondary}
+            />
             <Text style={styles.infoText}>No posts yet. Be the first to share!</Text>
           </View>
         )}
@@ -89,16 +102,20 @@ export const HomeFeedScreen = () => {
   };
 
   return (
-    <View style={[
-      styles.container,
-      {
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom,
-        paddingLeft: insets.left,
-        paddingRight: insets.right,
-      }
-    ]}>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+        },
+      ]}
+    >
       {renderContent()}
     </View>
   );
+
+  
 };
