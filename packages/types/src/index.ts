@@ -88,6 +88,7 @@ export interface Challenge {
   endDate: string;
   participantCount: number;
   goalType: 'STEPS' | 'CALORIES';
+  participantIds?: string[]; 
   goalValue: number;
 }
 

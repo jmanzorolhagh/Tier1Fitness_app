@@ -364,7 +364,7 @@ app.get('/api/challenges', async (req: Request, res: Response) => {
       startDate: c.startDate.toISOString(),
       endDate: c.endDate.toISOString(),
       participantCount: c.participants.length,
-      // --- NEW FIELDS MAPPED ---
+      participantIds: c.participants.map(p => p.userId), 
       goalType: c.goalType,
       goalValue: c.goalValue,
       // -------------------------
