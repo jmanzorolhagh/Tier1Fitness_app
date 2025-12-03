@@ -77,7 +77,6 @@ export const HomeFeedScreen = () => {
         data={posts}
         renderItem={({ item }) => <PostCard post={item} />}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={<StepCounter />}
         ListEmptyComponent={() => (
           <View style={styles.centerAll}>
             <Ionicons name="chatbubble-ellipses-outline" size={28} color={colors.textSecondary} />
