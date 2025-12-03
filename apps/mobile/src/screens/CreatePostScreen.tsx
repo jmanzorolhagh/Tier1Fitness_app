@@ -50,7 +50,6 @@ export function CreatePostScreen() {
   const [challengeTitle, setChallengeTitle] = useState('');
   const [challengeDesc, setChallengeDesc] = useState('');
   const [duration, setDuration] = useState(7); 
-  // New Goal State
   const [targetMetric, setTargetMetric] = useState<'STEPS' | 'CALORIES'>('STEPS');
   const [targetValue, setTargetValue] = useState('');
 
@@ -67,7 +66,6 @@ export function CreatePostScreen() {
     setLoading(true);
     try {
       if (mode === 'POST') {
-        // --- CREATE POST ---
         if (!caption) throw new Error("Please enter a caption.");
         
         await api.post('/posts', {
@@ -80,32 +78,38 @@ export function CreatePostScreen() {
         Alert.alert("Success", "Post created!");
         setCaption('');
         setImageUrl('');
-        // Reset navigation to HomeFeed to see the new post
         navigation.navigate('HomeFeed');
 
       } else {
-        // --- CREATE CHALLENGE ---
         if (!challengeTitle) throw new Error("Please enter a challenge title.");
         if (!challengeDesc) throw new Error("Please enter a description.");
         if (!targetValue) throw new Error("Please enter a target goal value.");
 
-        // Calculate Dates
         const startDate = new Date();
         const endDate = new Date();
         endDate.setDate(startDate.getDate() + duration);
 
-        await api.post('/challenges', {
+        // 1. Create the Challenge
+        const newChallenge = await api.post('/challenges', {
           title: challengeTitle,
           description: challengeDesc,
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
           creatorId: user.id,
-          // New Fields for Win Condition
           goalType: targetMetric,
           goalValue: parseInt(targetValue, 10),
         });
 
-        Alert.alert("Success", "Challenge created! You have auto-joined.");
+        // 2. AUTO-POST to Home Feed (Discovery Mechanism)
+        // We create a post announcing this challenge
+        await api.post('/posts', {
+          caption: `I just launched a new challenge: "${challengeTitle}"! ⚔️\n\nGoal: ${parseInt(targetValue).toLocaleString()} ${targetMetric.toLowerCase()} in ${duration} days.\n\nGo to the Challenges tab to join me!`,
+          postType: 'CHALLENGE_UPDATE',
+          userId: user.id,
+        });
+
+        Alert.alert("Success", "Challenge launched and posted to feed! 🚀");
+        
         setChallengeTitle('');
         setChallengeDesc('');
         setTargetValue('');
@@ -135,7 +139,6 @@ export function CreatePostScreen() {
           <Text style={styles.header}>Create</Text>
         </View>
 
-        {/* --- MODE TOGGLE --- */}
         <View style={styles.toggleContainer}>
           <TouchableOpacity 
             style={[styles.toggleItem, mode === 'POST' && styles.toggleItemActive]} 
@@ -151,9 +154,7 @@ export function CreatePostScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* --- FORM CONTENT --- */}
         {mode === 'POST' ? (
-          // POST FORM
           <>
             <Text style={styles.label}>Category</Text>
             <View style={styles.tabRow}>
@@ -191,7 +192,6 @@ export function CreatePostScreen() {
             />
           </>
         ) : (
-          // CHALLENGE FORM
           <>
             <Text style={styles.label}>Challenge Title</Text>
             <TextInput
@@ -254,7 +254,6 @@ export function CreatePostScreen() {
           </>
         )}
 
-        {/* --- SUBMIT BUTTON --- */}
         <TouchableOpacity
           style={styles.shareButton}
           onPress={handleCreate}
