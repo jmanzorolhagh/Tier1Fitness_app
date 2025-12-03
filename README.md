@@ -5,17 +5,17 @@
 
 ---
 
-
-1. [Project Overview](#-project-overview)  
-2. [Key Features](#-key-features)  
-3. [Technology Stack](#-technology-stack)  
-4. [Cloud Infrastructure & Workflow](#-cloud-infrastructure--workflow)  
+1. [Project Overview](#project-overview)  
+2. [Key Features](#key-features)  
+3. [Technology Stack](#technology-stack)  
+4. [Cloud Infrastructure & Workflow](#cloud-infrastructure--workflow)  
    - [Database Layer (Supabase)](#1-database-layer-supabase)  
    - [Backend Deployment (Render)](#2-backend-deployment-render)  
-5. [Quick Deployment Instructions (Expo + Cloud Backend)](#-quick-deployment-instructions-expo--cloud-backend)  
-6. [Local-Only Setup Instructions](#️-local-only-setup-instructions)  
-7. [The Team](#-the-team)
+5. [Quick Deployment Instructions (Expo + Cloud Backend)](#quick-deployment-instructions-expo--cloud-backend)  
+6. [Local-Only Setup Instructions](#local-only-setup-instructions)  
+7. [The Team](#the-team)
 ## Project Overview
+
 Tier1Fitness is a **cross-platform mobile application** designed to bridge the gap between solitary activity tracking and social networking. Unlike traditional fitness apps that focus solely on metrics, Tier1Fitness emphasizes **motivation through community engagement**.
 
 Users can:
