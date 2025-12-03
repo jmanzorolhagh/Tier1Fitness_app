@@ -6,7 +6,7 @@ import { Text, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { HomeFeedScreen } from '../screens/HomeFeedScreen';
-import { LeaderboardScreen } from '../screens/LeaderboardScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 import { CreatePostScreen } from '../screens/CreatePostScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
 import { SplashScreen } from '../screens/SplashScreen';
@@ -20,6 +20,7 @@ export type RootStackParamList = {
   Progress: undefined;
   Challenges: undefined;
   CreatePost: undefined;
+  Profile: {userId: string};
 };
 
 const Tab = createBottomTabNavigator<RootStackParamList>();
@@ -120,6 +121,17 @@ export const AppNavigator = () => (
     <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Tabs" component={TabsNavigator} />
+      <Stack.Screen 
+        name="Profile" 
+        component={ProfileScreen} 
+        options={{ 
+          presentation: 'modal', 
+          headerShown: true,     
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+          headerTitle: '',      
+        }} 
+      />
     </Stack.Navigator>
   </NavigationContainer>
 );
