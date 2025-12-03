@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { HomeFeedScreen } from '../screens/HomeFeedScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { CreatePostScreen } from '../screens/CreatePostScreen';
+import { ProgressScreen } from '../screens/ProgressScreen';
 import { SplashScreen } from '../screens/SplashScreen';
 import { colors } from '../theme/colors';
 
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   Splash: undefined;
   Tabs: undefined;
   HomeFeed: undefined;
+  Progress: undefined;
   Leaderboard: undefined;
   CreatePost: undefined;
 };
@@ -76,6 +78,16 @@ const TabsNavigator = () => (
         title: 'Tier1Fitness',
         tabBarIcon: ({ focused }) => (
           <TabBarIcon focused={focused} label="Home" iconName="home-outline" />
+        ),
+      }}
+    />
+    <Tab.Screen
+      name="Progress"
+      component={ProgressScreen}
+      options={{
+        title: 'Progress',
+        tabBarIcon: ({ focused }) => (
+          <TabBarIcon focused={focused} label="Stats" iconName="stats-chart-outline" />
         ),
       }}
     />
