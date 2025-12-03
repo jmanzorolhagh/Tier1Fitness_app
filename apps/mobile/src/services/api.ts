@@ -1,7 +1,7 @@
 import { Alert } from 'react-native';
 
-// CHECK THIS LINE CAREFULLY:
 const API_BASE_URL = 'https://tier1fitness-app.onrender.com/api'; 
+export const MY_DEMO_USER_ID = "cmhw533h40000v2pk92qrjsfe";
 
 const api = {
   get: async (endpoint: string) => {
