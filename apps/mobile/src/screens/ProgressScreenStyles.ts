@@ -16,15 +16,11 @@ export default StyleSheet.create({
     fontWeight: '800',
     color: colors.text,
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
+  // --- GOAL CARD ---
   goalCard: {
     backgroundColor: colors.surface,
     borderRadius: 24,
@@ -85,13 +81,13 @@ export default StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 16,
-    width: '48%',
+    width: '48%', 
     borderWidth: 1,
     borderColor: '#334155',
   },
   fullWidthCard: {
     width: '100%',
-    marginBottom: 20,
+    marginBottom: 30,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -122,21 +118,58 @@ export default StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
-  // --- TIP CARD ---
-  tipCard: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)', // Very faint blue
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
+  // --- LEADERBOARD ---
+  sectionHeader: {
+    marginBottom: 15,
   },
-  tipText: {
-    marginLeft: 12,
-    fontSize: 14,
-    color: '#93C5FD',
-    lineHeight: 20,
-    flex: 1,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  leaderboardCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#334155',
+    overflow: 'hidden',
+  },
+  rankRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  rankRowHighlight: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)', // Highlight "Me"
+  },
+  rankNumberContainer: {
+    width: 30,
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  rankNumber: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textSecondary,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#333',
+    marginRight: 12,
+  },
+  rankUsername: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  rankScore: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.primary,
   },
 });
