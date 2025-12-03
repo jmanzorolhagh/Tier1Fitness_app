@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { PrismaClient, PostType as PrismaPostType } from '@prisma/client';
 
-
 import { 
   User as ApiUser, 
   Post as ApiPost,
@@ -15,7 +14,7 @@ import {
 
 const prisma = new PrismaClient();
 const app = express();
-const globalUserId = "cmhw533h40000v2pk92qrjsfe";
+
 app.use(cors());
 app.use(express.json());
 
@@ -24,12 +23,49 @@ app.use((req, res, next) => {
   next(); 
 });
 
+// --- ROUTES ---
 
+// Health Check
 app.get('/api', (req: Request, res: Response) => {
   res.json({ message: 'Tier1Fitness API is running!' });
 });
 
+app.post('/api/login', async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password required" });
+    }
+
+    // Find user by email
+    const user = await prisma.user.findUnique({ where: { email } });
+    
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.passwordHash !== password) {
+      return res.status(401).json({ error: "Wrong password" });
+    }
+
+    const userToReturn: ApiUser = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      created: user.createdAt.toISOString()
+    };
+
+    console.log(`User logged in: ${user.username}`);
+    res.json(userToReturn);
+
+  } catch (error) {
+    console.error("Login failed:", error);
+    res.status(500).json({ error: "Login error" });
+  }
+});
+
+// 2. Create User (Sign Up)
 app.post('/api/users/create', async (req: Request, res: Response) => {
   try {
     const { email, username, password } = req.body;
@@ -42,10 +78,10 @@ app.post('/api/users/create', async (req: Request, res: Response) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'User with this email or username already exists.' });
+      return res.status(409).json({ error: 'User with this email or username already exists.' });
     }
     
-    const defaultProfilePic = `https://ui-avatars.com/api/?name=${username || 'U'}`;
+    const defaultProfilePic = `https://ui-avatars.com/api/?name=${username}&background=0D8ABC&color=fff`;
     
     const newUser = await prisma.user.create({
       data: {
@@ -62,13 +98,14 @@ app.post('/api/users/create', async (req: Request, res: Response) => {
       email: newUser.email,
       created: newUser.createdAt.toISOString()
     };
+    
+    console.log(`User created: ${newUser.username}`);
     res.status(201).json(userToReturn);
   } catch (error) {
     console.error('User creation failed:', error);
     res.status(500).json({ error: 'An error occurred while creating the user.' });
   }
 });
-
 
 app.get('/api/users/:id', async (req: Request, res: Response) => {
   try {
@@ -98,10 +135,7 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
     const healthData = await prisma.healthData.findFirst({
       where: {
         userId: id,
-        date: {
-          gte: today, 
-          lt: tomorrow 
-        }
+        date: { gte: today, lt: tomorrow }
       }
     });
 
@@ -157,16 +191,14 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
   }
 });
 
-
+// 4. Get All Posts
 app.get('/api/posts', async (req: Request, res: Response) => {
   try {
     const postsFromDb = await prisma.post.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
         author: true, 
-        _count: { 
-          select: { likes: true, comments: true }
-        }
+        _count: { select: { likes: true, comments: true } }
       }
     });
 
@@ -184,10 +216,8 @@ app.get('/api/posts', async (req: Request, res: Response) => {
         postType: post.postType as ApiPostType, 
         createdAt: post.createdAt.toISOString(),
         author: publicAuthor,
-
         likeCount: post._count.likes,
         commentCount: post._count.comments,
-        
         hasLiked: Math.random() > 0.5 
       };
     });
@@ -199,18 +229,15 @@ app.get('/api/posts', async (req: Request, res: Response) => {
   }
 });
 
-
+// 5. Create Post
 app.post('/api/posts', async (req: Request, res: Response) => {
   try {
     const { caption, imageUrl, postType, userId } = req.body;
+    
     if (!caption || !postType || !userId) {
       return res.status(400).json({ error: 'Caption, postType, and userId are required.' });
     }
 
-    const userExists = await prisma.user.findUnique({ where: { id: globalUserId }});
-    if (!userExists) {
-      return res.status(404).json({ error: 'Author user not found.' });
-    }
 
     const newPost = await prisma.post.create({
       data: {
@@ -222,7 +249,6 @@ app.post('/api/posts', async (req: Request, res: Response) => {
       include: { author: true } 
     });
     
-  
     const publicAuthor: ApiPublicUser = {
       id: newPost.author.id,
       username: newPost.author.username,
@@ -242,36 +268,27 @@ app.post('/api/posts', async (req: Request, res: Response) => {
     };
     
     res.status(201).json(postToSend);
-
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to create post:', error);
+    if (error.code === 'P2003') {
+       return res.status(404).json({ error: 'User ID not found in database.' });
+    }
     res.status(500).json({error: "An error occured creating the post."});
   }
 });
 
-
-
+// 6. Submit Health Data
 app.post('/api/healthdata', async (req: Request, res: Response) => {
   try {
     const { userId, steps, calories } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required.' });
-    }
+    if (!userId) return res.status(400).json({ error: 'userId is required.' });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const healthData = await prisma.healthData.upsert({
-      where: {
-        userId_date: {
-          userId: userId,
-          date: today
-        }
-      },
-      update: {
-        dailySteps: steps,
-        dailyCalories: calories
-      },
+      where: { userId_date: { userId: userId, date: today } },
+      update: { dailySteps: steps, dailyCalories: calories },
       create: {
         userId: userId,
         date: today,
@@ -288,23 +305,16 @@ app.post('/api/healthdata', async (req: Request, res: Response) => {
   }
 });
 
-
+// 7. Get Leaderboard
 app.get('/api/leaderboard', async (req: Request, res: Response) => {
   try {
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
     const healthDataEntries = await prisma.healthData.findMany({
-      where: {
-        date: {
-          gte: today, 
-          lt: tomorrow 
-        }
-      },
+      where: { date: { gte: today, lt: tomorrow } },
       orderBy: { dailySteps: 'desc' },
       take: 10,
       include: { user: true } 
@@ -325,7 +335,6 @@ app.get('/api/leaderboard', async (req: Request, res: Response) => {
     });
     
     res.json(leaderboard);
-
   } catch (error) {
     console.error('Failed to get leaderboard:', error);
     res.status(500).json({error: "An error occured getting the leaderboard."});
@@ -333,6 +342,6 @@ app.get('/api/leaderboard', async (req: Request, res: Response) => {
 });
 
 const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(` Server is running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
