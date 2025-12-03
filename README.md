@@ -115,7 +115,8 @@ This will start the Expo development server and display a QR code in your termin
 
 ### 5. Open on Your Device
 Open Expo Go on your phone
-<img width="1080" height="2202" alt="image" src="https://github.com/user-attachments/assets/e8527584-0c6d-4446-8b48-6e00ad9daef6" />
+
+<img width="300" height="600" alt="image" src="https://github.com/user-attachments/assets/e8527584-0c6d-4446-8b48-6e00ad9daef6" />
 
 
 Scan the QR code from your terminal
