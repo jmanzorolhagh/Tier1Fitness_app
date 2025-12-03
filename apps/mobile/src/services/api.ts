@@ -1,35 +1,42 @@
 import { Alert } from 'react-native';
 
 const API_BASE_URL = 'https://tier1fitness-app.onrender.com/api'; 
+
 export const MY_DEMO_USER_ID = "cmhw533h40000v2pk92qrjsfe";
 
+const logAndThrowError = (error: unknown) => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  
+  console.error(`[☠️ NETWORK FAIL]`, errorMessage);
+  throw error;
+};
+
 const api = {
-  get: async (endpoint: string) => {
+  get: async <T>(endpoint: string): Promise<T> => {
     const fullUrl = `${API_BASE_URL}${endpoint}`;
-    console.log(`[API REQUEST] GET ${fullUrl}`);
+    console.log(`[🚀 API REQUEST] GET ${fullUrl}`);
 
     try {
       const response = await fetch(fullUrl);
-      console.log(`[Unknown Status] ${response.status}`); // Debug log
-
+      
       if (!response.ok) {
         const text = await response.text();
-        console.log(`[API ERROR] Status: ${response.status} | Body: ${text}`);
+        console.log(`[❌ API ERROR] Status: ${response.status} | Body: ${text}`);
         throw new Error(`Server returned ${response.status}: ${text}`);
       }
 
       const json = await response.json();
-      return json;
+      return json as T; 
 
-    } catch (error: any) {
-      console.error(`[☠️ NETWORK FAIL]`, error);
-      throw error;
+    } catch (error) {
+      logAndThrowError(error);
+      throw error; 
     }
   },
 
-  post: async (endpoint: string, body: any) => {
+  post: async <T>(endpoint: string, body: any): Promise<T> => {
     const fullUrl = `${API_BASE_URL}${endpoint}`;
-    console.log(`[API REQUEST] POST ${fullUrl}`);
+    console.log(`[🚀 API REQUEST] POST ${fullUrl}`);
 
     try {
       const response = await fetch(fullUrl, {
@@ -42,13 +49,15 @@ const api = {
 
       if (!response.ok) {
         const text = await response.text();
-        console.log(`[API ERROR] Status: ${response.status} | Body: ${text}`);
+        console.log(`[❌ API ERROR] Status: ${response.status} | Body: ${text}`);
         throw new Error(`Server returned ${response.status}: ${text}`);
       }
 
-      return await response.json();
-    } catch (error: any) {
-      console.error(`[NETWORK FAIL]`, error);
+      const json = await response.json();
+      return json as T;
+
+    } catch (error) {
+      logAndThrowError(error);
       throw error;
     }
   },
