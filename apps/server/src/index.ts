@@ -197,11 +197,18 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
 // 4. Get All Posts
 app.get('/api/posts', async (req: Request, res: Response) => {
   try {
+    // Get the user asking for the posts (optional)
+    const currentUserId = req.query.userId as string;
+
     const postsFromDb = await prisma.post.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
         author: true, 
-        _count: { select: { likes: true, comments: true } }
+        _count: { select: { likes: true, comments: true } },
+        // KEY CHANGE: Fetch likes ONLY for this specific user
+        likes: currentUserId ? {
+          where: { userId: currentUserId }
+        } : false
       }
     });
 
@@ -212,6 +219,10 @@ app.get('/api/posts', async (req: Request, res: Response) => {
         profilePicUrl: post.author.profilePicUrl
       };
 
+      // Check if the 'likes' array has any entries.
+      // If yes, it means THIS user liked THIS post.
+      const userHasLiked = post.likes ? post.likes.length > 0 : false;
+
       return {
         id: post.id,
         caption: post.caption,
@@ -221,7 +232,7 @@ app.get('/api/posts', async (req: Request, res: Response) => {
         author: publicAuthor,
         likeCount: post._count.likes,
         commentCount: post._count.comments,
-        hasLiked: Math.random() > 0.5 
+        hasLiked: userHasLiked 
       };
     });
     
