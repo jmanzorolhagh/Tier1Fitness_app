@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -15,7 +18,7 @@ import { PostType } from '@tier1fitness_app/types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { colors } from '../theme/colors';
 import api from '../services/api';
-import { UserService } from '../services/userService'; // Import the User Service
+import { UserService } from '../services/userService';
 import { Ionicons } from '@expo/vector-icons';
 
 type CreatePostNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreatePost'>;
@@ -43,6 +46,7 @@ export function CreatePostScreen() {
       return;
     }
 
+    // 1. Get the real logged-in user from storage
     const currentUser = await UserService.getUser();
 
     if (!currentUser) {
@@ -57,12 +61,14 @@ export function CreatePostScreen() {
         caption,
         imageUrl: imageUrl || null,
         postType,
-        userId: currentUser.id, 
+        userId: currentUser.id, // <--- Dynamic ID
       });
       
+      // 2. Clear fields
       setCaption('');
       setImageUrl('');
       
+      // 3. Navigate back to HomeFeed
       navigation.navigate('HomeFeed');
       
     } catch (e: any) {
@@ -72,64 +78,72 @@ export function CreatePostScreen() {
   };
 
   return (
-    <View style={[
-      styles.container,
-      {
-        paddingBottom: insets.bottom,
-        paddingLeft: insets.left,
-        paddingRight: insets.right,
-      }
-    ]}>
-      <View style={styles.headerRow}>
-        <Ionicons name="create-outline" size={26} color={colors.primary} style={{ marginRight: 8 }} />
-        <Text style={styles.header}>Create a Post</Text>
-      </View>
-
-      <Text style={styles.label}>What would you like to share?</Text>
-      <View style={styles.tabRow}>
-        {POST_TYPES.map(type => (
-          <TouchableOpacity
-            key={type.value}
-            onPress={() => setPostType(type.value)}
-            style={[styles.tab, postType === type.value && styles.tabSelected]}
-          >
-            <Text style={postType === type.value ? styles.tabTextSelected : styles.tabText}>
-              {type.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-    
-      <Text style={styles.label}>Description</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Share your workouts or progress!"
-        value={caption}
-        onChangeText={setCaption}
-        multiline
-      />
-
-      <Text style={styles.label}>Image URL (Optional)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Paste image URL here"
-        value={imageUrl}
-        onChangeText={setImageUrl}
-        autoCapitalize="none"
-      />
-
-      <TouchableOpacity
-        style={styles.shareButton}
-        onPress={handleSubmit}
-        disabled={loading}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1, backgroundColor: colors.background }}
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          {
+            paddingBottom: insets.bottom + 20,
+            paddingLeft: insets.left + 16,
+            paddingRight: insets.right + 16,
+          }
+        ]}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.shareButtonText}> Share Post</Text>
-        )}
-      </TouchableOpacity>
-    </View>
+        <View style={styles.headerRow}>
+          <Ionicons name="create-outline" size={26} color={colors.primary} style={{ marginRight: 8 }} />
+          <Text style={styles.header}>Create a Post</Text>
+        </View>
+
+        <Text style={styles.label}>What would you like to share?</Text>
+        <View style={styles.tabRow}>
+          {POST_TYPES.map(type => (
+            <TouchableOpacity
+              key={type.value}
+              onPress={() => setPostType(type.value)}
+              style={[styles.tab, postType === type.value && styles.tabSelected]}
+            >
+              <Text style={postType === type.value ? styles.tabTextSelected : styles.tabText}>
+                {type.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.label}>Description</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Share your workouts or progress!"
+          placeholderTextColor={colors.textSecondary} // <--- Makes placeholder visible
+          value={caption}
+          onChangeText={setCaption}
+          multiline
+        />
+
+        <Text style={styles.label}>Image URL (Optional)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Paste image URL here"
+          placeholderTextColor={colors.textSecondary} // <--- Makes placeholder visible
+          value={imageUrl}
+          onChangeText={setImageUrl}
+          autoCapitalize="none"
+        />
+
+        <TouchableOpacity
+          style={styles.shareButton}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.shareButtonText}>Share Post</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

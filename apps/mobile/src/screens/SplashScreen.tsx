@@ -117,7 +117,6 @@ export const SplashScreen = () => {
           </Text>
         </View>
 
-        {/* Username - Only show if Signing Up */}
         {!isLogin && (
           <TextInput
             style={styles.input}
@@ -162,9 +161,9 @@ export const SplashScreen = () => {
         {/* Toggle Mode Button */}
         <TouchableOpacity onPress={toggleMode} style={{ marginTop: 20, padding: 10 }}>
           <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            {isLogin ? "Don't have an account?" : "Already have an account? "}
             <Text style={{ color: colors.primary, fontWeight: 'bold' }}>
-              {isLogin ? 'Sign Up' : 'Log In'}
+              {isLogin ? 'Sign Up     ' : 'Log In     '}
             </Text>
           </Text>
         </TouchableOpacity>

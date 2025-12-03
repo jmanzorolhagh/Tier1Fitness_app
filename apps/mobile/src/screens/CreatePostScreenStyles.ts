@@ -1,87 +1,81 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '../theme/colors';
 
-const CreatePostStyles = StyleSheet.create({
+export default StyleSheet.create({
   container: {
     flex: 1,
-    padding: 18,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background, // Dark background
+    paddingTop: 20,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 20,
   },
   header: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '800',
+    color: colors.text, // White text
   },
   label: {
-    marginTop: 16,
-    marginBottom: 6,
+    fontSize: 16,
     fontWeight: '600',
-    fontSize: 15,
-    color: colors.textSecondary,
+    color: colors.textSecondary, // Light gray for labels
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  input: {
+    backgroundColor: colors.surface, 
+    color: colors.text, 
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 10,
   },
   tabRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 12,
+    marginBottom: 20,
     gap: 10,
   },
   tab: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: colors.surface,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
   },
   tabSelected: {
+    backgroundColor: colors.primary, // Blue when selected
     borderColor: colors.primary,
-    backgroundColor: '#E6F1FC',
   },
   tabText: {
-    color: '#444',
+    color: colors.textSecondary,
     fontWeight: '600',
+    fontSize: 14,
   },
   tabTextSelected: {
-    color: colors.primary,
+    color: '#FFFFFF', 
     fontWeight: '700',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    minHeight: 50,
-    marginBottom: 12,
-    color: colors.text,
-  },
   shareButton: {
-    marginTop: 20,
-    borderRadius: 10,
     backgroundColor: colors.primary,
     paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginTop: 30,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   shareButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
     fontSize: 18,
+    fontWeight: 'bold',
   },
 });
-
-export default CreatePostStyles;

@@ -58,7 +58,7 @@ export const HomeFeedScreen = () => {
       return (
         <View style={styles.centerAll}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading your feed...</Text>
+          <Text style={styles.loadingText}>Loading your feed    ...</Text>
         </View>
       );
     }

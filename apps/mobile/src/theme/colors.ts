@@ -1,15 +1,24 @@
 
 
 export const colors = {
-  primary: '#2874F0', 
-  background: '#FFFFFF',
-  cardBackground: '#FAFAFA',
-  surface: '#F6F7FB', 
-  text: '#161B22', 
-  textSecondary: '#6a737d',
-  border: '#dedede', 
-  accent: '#FF453A', 
-  gold: '#FFD700',
-  silver: '#C0C0C0',
-  bronze: '#CD7F32',
+  // Brand Colors
+  primary: '#3B82F6', // Vibrant Blue (good for main buttons)
+  accent: '#EF4444',  // Red (hearts, urgent notices)
+
+  // Backgrounds
+  background: '#0F172A',     // Very dark slate (Main Screen Background)
+  surface: '#1E293B',        // Lighter slate (Card Background - crucial for the "Tile" look)
+  cardBackground: '#1E293B', // Alias for clarity
+
+  // Typography
+  text: '#F8FAFC',           // Almost White (Main text)
+  textSecondary: '#94A3B8',  // Muted Gray (Timestamps, subtitles)
+  
+  // UI Elements
+  border: '#334155',         // Subtle border color for cards/inputs
+  
+  // Leaderboard Metals
+  gold: '#FBBF24',
+  silver: '#9CA3AF',
+  bronze: '#B45309',
 };

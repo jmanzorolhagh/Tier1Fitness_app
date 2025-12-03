@@ -21,12 +21,12 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: colors.textSecondary,
+    color: colors.text,
     marginTop: 6,
     textAlign: 'center',
     width: '100%'
   },
-  input: {
+   input: {
     width: '100%',
     borderWidth: 1,
     borderColor: colors.border,
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     marginBottom: 12,
-    color: colors.text,
+    color: '#fff',
   },
   primaryButton: {
     width: '100%',
