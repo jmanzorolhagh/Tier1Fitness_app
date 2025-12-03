@@ -11,13 +11,14 @@ import { CreatePostScreen } from '../screens/CreatePostScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
 import { SplashScreen } from '../screens/SplashScreen';
 import { colors } from '../theme/colors';
+import { ChallengeScreen } from 'src/screens/ChallengeScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
   Tabs: undefined;
   HomeFeed: undefined;
   Progress: undefined;
-  Leaderboard: undefined;
+  Challenges: undefined;
   CreatePost: undefined;
 };
 
@@ -91,16 +92,16 @@ const TabsNavigator = () => (
         ),
       }}
     />
-    <Tab.Screen
-      name="Leaderboard"
-      component={LeaderboardScreen}
+      <Tab.Screen
+      name="Challenges"
+      component={ChallengeScreen}
       options={{
-        title: 'Leaderboard',
+        title: 'Challenges',
         tabBarIcon: ({ focused }) => (
-          <TabBarIcon focused={focused} label="Ranks" iconName="trophy-outline" />
+          <TabBarIcon focused={focused} label="Challenges" iconName="flash-outline" />
         ),
       }}
-    />
+    />  
     <Tab.Screen
       name="CreatePost"
       component={CreatePostScreen}
