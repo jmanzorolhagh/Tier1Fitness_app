@@ -14,7 +14,8 @@ import styles from './CreatePostScreenStyles';
 import { PostType } from '@tier1fitness_app/types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { colors } from '../theme/colors';
-import api, { MY_DEMO_USER_ID } from '../services/api';
+import api from '../services/api';
+import { UserService } from '../services/userService'; // Import the User Service
 import { Ionicons } from '@expo/vector-icons';
 
 type CreatePostNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreatePost'>;
@@ -32,12 +33,20 @@ export function CreatePostScreen() {
   const [imageUrl, setImageUrl] = useState('');
   const [postType, setPostType] = useState<PostType>(PostType.WORKOUT);
   const [loading, setLoading] = useState(false);
+  
   const navigation = useNavigation<CreatePostNavigationProp>();
   const insets = useSafeAreaInsets();
 
   const handleSubmit = async () => {
     if (!caption) {
       Alert.alert('Error', 'Please enter a description for your post.');
+      return;
+    }
+
+    const currentUser = await UserService.getUser();
+
+    if (!currentUser) {
+      Alert.alert("Not Logged In", "Please log in to create a post.");
       return;
     }
 
@@ -48,9 +57,14 @@ export function CreatePostScreen() {
         caption,
         imageUrl: imageUrl || null,
         postType,
-        userId: MY_DEMO_USER_ID,
+        userId: currentUser.id, 
       });
+      
+      setCaption('');
+      setImageUrl('');
+      
       navigation.navigate('HomeFeed');
+      
     } catch (e: any) {
       Alert.alert('Post Failed', e.message);
     }
