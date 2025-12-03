@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Challenge } from '@tier1fitness_app/types';
@@ -14,7 +14,22 @@ interface ChallengeCardProps {
 
 export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinSuccess }) => {
   const [joining, setJoining] = useState(false);
-  const [joined, setJoined] = useState(false); // Local state for immediate UI feedback
+  const [joined, setJoined] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      const user = await UserService.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        
+        if (challenge.participantIds?.includes(user.id)) {
+          setJoined(true);
+        }
+      }
+    };
+    checkStatus();
+  }, [challenge]); 
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -22,8 +37,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
   };
 
   const handleJoin = async () => {
-    const user = await UserService.getUser();
-    if (!user) {
+    if (!currentUserId) {
       Alert.alert("Login Required", "Please log in to join challenges.");
       return;
     }
@@ -31,7 +45,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
     setJoining(true);
     try {
       await api.post('/challenges/join', {
-        userId: user.id,
+        userId: currentUserId,
         challengeId: challenge.id
       });
       
@@ -40,10 +54,8 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
       if (onJoinSuccess) onJoinSuccess();
       
     } catch (e: any) {
-      // If error is "Already joined", just update UI
       if (e.message?.includes("Already joined")) {
-        setJoined(true);
-        Alert.alert("Info", "You are already in this challenge.");
+        setJoined(true); 
       } else {
         Alert.alert("Error", e.message || "Failed to join.");
       }
@@ -52,12 +64,17 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
     }
   };
 
+  const goalIcon = challenge.goalType === 'STEPS' ? 'footsteps' : 'flame';
+  const goalColor = challenge.goalType === 'STEPS' ? colors.primary : colors.accent;
+
+  const progress = joined ? 0.15 : 0; 
+  const percent = Math.round(progress * 100);
+
   return (
     <View style={styles.card}>
-      {/* Header / Banner area */}
       <View style={styles.header}>
-        <View style={styles.iconBadge}>
-          <Ionicons name="trophy" size={20} color="#F59E0B" />
+        <View style={[styles.iconBadge, { backgroundColor: goalColor + '20' }]}>
+          <Ionicons name={goalIcon as any} size={20} color={goalColor} />
         </View>
         <View style={styles.metaContainer}>
           <Text style={styles.title}>{challenge.title}</Text>
@@ -67,41 +84,51 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
         </View>
       </View>
 
-      {/* Description */}
       <Text style={styles.description} numberOfLines={2}>
         {challenge.description}
       </Text>
 
-      {/* Footer: Creator & Stats */}
+      <View style={{ flexDirection: 'row', marginBottom: 16, alignItems: 'center' }}>
+        <Text style={{ color: colors.textSecondary, fontWeight: '600', marginRight: 6 }}>Target:</Text>
+        <Text style={{ color: colors.text, fontWeight: 'bold' }}>
+          {challenge.goalValue.toLocaleString()} {challenge.goalType === 'STEPS' ? 'Steps' : 'Calories'}
+        </Text>
+      </View>
+
+      {joined ? (
+        <View style={{ marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Your Progress</Text>
+            <Text style={{ color: goalColor, fontWeight: 'bold', fontSize: 12 }}>{percent}%</Text>
+          </View>
+          <View style={{ height: 8, backgroundColor: '#0F172A', borderRadius: 4, overflow: 'hidden' }}>
+            <View style={{ width: `${percent}%`, height: '100%', backgroundColor: goalColor }} />
+          </View>
+        </View>
+      ) : (
+        <TouchableOpacity 
+          style={styles.joinButton} 
+          onPress={handleJoin}
+          disabled={joining}
+        >
+          {joining ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={styles.joinButtonText}>Join Challenge</Text>
+          )}
+        </TouchableOpacity>
+      )}
+
       <View style={styles.footer}>
         <View style={styles.creatorContainer}>
-          <Image 
-            source={{ uri: challenge.creator.profilePicUrl }} 
-            style={styles.avatar} 
-          />
+          <Image source={{ uri: challenge.creator.profilePicUrl }} style={styles.avatar} />
           <Text style={styles.creatorName}>Host: {challenge.creator.username}</Text>
         </View>
-
         <View style={styles.statsContainer}>
           <Ionicons name="people" size={16} color={colors.textSecondary} />
           <Text style={styles.participantCount}>{challenge.participantCount}</Text>
         </View>
       </View>
-
-      {/* Join Button */}
-      <TouchableOpacity 
-        style={[styles.joinButton, joined && styles.joinedButton]} 
-        onPress={handleJoin}
-        disabled={joining || joined}
-      >
-        {joining ? (
-          <ActivityIndicator color="white" size="small" />
-        ) : (
-          <Text style={styles.joinButtonText}>
-            {joined ? "Joined ✓" : "Join Challenge"}
-          </Text>
-        )}
-      </TouchableOpacity>
     </View>
   );
 };
