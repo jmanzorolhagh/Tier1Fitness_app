@@ -6,25 +6,32 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "entryPoint": "./index.js",
+
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
+        "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jmanzorolhagh.tier1fitnessApp"
+      "bundleIdentifier": "com.jmanzorolhagh.tier1fitnessApp",
+      "infoPlist": {
+        "NSMotionUsageDescription": "This app uses the pedometer to track your daily steps for the leaderboard."
+      }
     },
     "android": {
       "package": "com.jmanzorolhagh.tier1fitness_app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/fitness.jpg",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.ACTIVITY_RECOGNITION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,13 +40,13 @@
       [
         "expo-sensors",
         {
-          "motionPermission": "Allow $(PRODUCT_NAME) to access your motion data to track steps."
+          "motionPermission": "Allow Tier1Fitness to access your pedometer to track steps."
         }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": "570ff387-4d79-4816-871d-44915013c90d"
+        "projectId": "YOUR_PROJECT_ID"
       }
     }
   }
