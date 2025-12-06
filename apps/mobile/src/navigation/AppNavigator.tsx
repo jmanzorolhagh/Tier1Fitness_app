@@ -12,6 +12,8 @@ import { ProgressScreen } from '../screens/ProgressScreen';
 import { SplashScreen } from '../screens/SplashScreen';
 import { colors } from '../theme/colors';
 import { ChallengeScreen } from 'src/screens/ChallengeScreen';
+import { CommentsScreen } from '../screens/CommentsScreen';
+
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -21,6 +23,8 @@ export type RootStackParamList = {
   Challenges: undefined;
   CreatePost: undefined;
   Profile: {userId: string};
+  Comments: { postId: string };
+
 };
 
 const Tab = createBottomTabNavigator<RootStackParamList>();
@@ -132,6 +136,19 @@ export const AppNavigator = () => (
           headerTitle: '',      
         }} 
       />
+      <Stack.Screen
+          name="Comments"
+          component={CommentsScreen}
+          options={{
+            presentation: "transparentModal",
+            headerShown: false,
+            animation: "slide_from_bottom"
+          }}
+        />
+        
+
+
+
     </Stack.Navigator>
   </NavigationContainer>
 );

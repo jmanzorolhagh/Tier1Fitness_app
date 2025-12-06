@@ -1,11 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   FlatList,
   Text,
+  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  StyleSheet
+  StyleSheet,
+  Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,8 +17,13 @@ import { colors } from '../theme/colors';
 import api from '../services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { UserService } from '../services/userService'; // Import User Service
+import { useNavigation } from '@react-navigation/native';
+import { MY_DEMO_USER_ID } from '../services/api';
+
 
 export const HomeFeedScreen = () => {
+  const navigation = useNavigation();
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +55,31 @@ export const HomeFeedScreen = () => {
       setRefreshing(false);
     }
   }, [refreshing]);
+
+  useLayoutEffect(() => {
+  navigation.setOptions({
+    headerRight: () => (
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate("Profile", { userId: MY_DEMO_USER_ID })
+        }
+        style={{ marginRight: 16 }}
+      >
+        <Image
+          source={{ uri: "https://i.pravatar.cc/150?img=5" }} // OR user's real pic
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: "#ccc",
+          }}
+        />
+      </TouchableOpacity>
+    ),
+  });
+}, [navigation]);
+
+
 
   // useFocusEffect ensures data refreshes when you switch tabs 
   // or come back from Create Post / Login

@@ -10,6 +10,8 @@ import api from '../services/api';
 import { UserService } from '../services/userService';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
+
+
 type PostCardProps = {
   post: Post;
 };
@@ -45,6 +47,8 @@ const formatTimeAgo = (isoDate: string) => {
 };
 
 export const PostCard = ({ post }: PostCardProps) => {
+  
+
   const { width } = useWindowDimensions();
   const navigation = useNavigation<PostCardNavigationProp>();
   
@@ -59,6 +63,9 @@ export const PostCard = ({ post }: PostCardProps) => {
     setIsLiked(post.hasLiked);
     setLikeCount(post.likeCount);
   }, [post]);
+
+  
+
 
   const handleLike = async () => {
     const user = await UserService.getUser();
@@ -141,10 +148,14 @@ export const PostCard = ({ post }: PostCardProps) => {
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.actionItem}>
-          <Feather name="message-circle" size={24} color={colors.text} />
-          <Text style={styles.actionText}>{post.commentCount}</Text>
-        </View>
+        <TouchableOpacity
+            style={styles.actionItem}
+            onPress={() => navigation.navigate('Comments', { postId: post.id })}
+          >
+            <Feather name="message-circle" size={24} color={colors.text} />
+            <Text style={styles.actionText}>{post.commentCount}</Text>
+          </TouchableOpacity>
+
       </View>
     </View>
   );

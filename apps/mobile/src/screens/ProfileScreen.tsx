@@ -18,29 +18,69 @@ import { UserProfile, Post } from '@tier1fitness_app/types';
 import api from '../services/api';
 import { colors } from '../theme/colors';
 import { PostCard } from '../components/PostCard'; 
+import { UserService } from '../services/userService';
+import { MY_DEMO_USER_ID } from '../services/api';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
+
+
 
 // Define route props
-type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'>;
+type ProfileRouteProp = RouteProp<RootStackParamList, 'Profile'>;
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
 const { width } = Dimensions.get('window');
 const POST_GRID_SIZE = (width - 6) / 3; // 3 columns with tiny margin
 
-const defaultProfilePic = 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff';
+const defaultProfilePic = 'https://i.pravatar.cc/300?img=5';
 
 export function ProfileScreen() {
-  const route = useRoute<ProfileScreenRouteProp>();
+  const route = useRoute<ProfileRouteProp>();
   const navigation = useNavigation<Props>();
   const { userId } = route.params;
+  const { params } = useRoute<ProfileRouteProp>();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'posts' | 'grid'>('posts');
   const [isFollowing, setIsFollowing] = useState(false); 
+  const isOwnProfile = userId === MY_DEMO_USER_ID;
 
+  const [posts, setPosts] = useState<Post[] | null>(null);
   useEffect(() => {
-    fetchProfile();
-  }, [userId]);
+      fetchPosts();
+    }, []);
+    const fetchPosts = async () => {
+      try {
+        const data = await api.get(`/users/${userId}/posts`);
+        setPosts(data); // can be [] or filled array
+      } catch (error) {
+        console.log("Failed to load user posts:", error);
+      }
+    };
+
+    
+  
+  const handleLogout = async () => {
+  try {
+    // remove any stored user ID or token
+    await AsyncStorage.removeItem('userId');
+    await AsyncStorage.removeItem('token');
+
+    // Reset navigation back to Login screen
+    navigation.reset({
+  index: 0,
+  routes: [{ name: "Splash" }],
+});
+
+  } catch (error) {
+    console.log("Logout failed:", error);
+  }
+};
+
+  
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -55,6 +95,9 @@ export function ProfileScreen() {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    fetchProfile();
+  }, [userId]);
 
   const handleFollowToggle = () => {
     // Mock logic for UI feedback
@@ -70,6 +113,8 @@ export function ProfileScreen() {
   // --- HEADER COMPONENT ---
   const renderHeader = () => {
     if (!profile) return null;
+    if (posts === null) return <Loading />;
+
 
     return (
       <View style={styles.header}>
@@ -109,7 +154,7 @@ export function ProfileScreen() {
 
         {/* Health Data Summary */}
         <View style={styles.healthStats}>
-            <Text style={styles.healthTitle}>Daily Activity</Text>
+            <Text style={styles.healthTitle}>Today's Activity</Text>
             <View style={styles.healthRow}>
                 <Ionicons name="footsteps" size={18} color={colors.primary} />
                 <Text style={styles.healthText}>
@@ -198,16 +243,7 @@ export function ProfileScreen() {
     <View style={styles.container}>
       {activeTab === 'posts' ? (
         <FlatList
-          data={profile.posts}
-          renderItem={renderPostItem}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={renderHeader}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <FlatList
-          data={profile.posts}
+          data={posts || []}
           renderItem={renderGridItem}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={renderHeader}
@@ -216,7 +252,25 @@ export function ProfileScreen() {
           columnWrapperStyle={styles.gridColumnWrapper}
           showsVerticalScrollIndicator={false}
         />
+
+      ) : (
+        <FlatList
+          data={posts || []}   // using only user’s posts
+          renderItem={renderPostItem}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={renderHeader}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        />
+
       )}
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={handleLogout}
+      >
+        <Text style={styles.logoutText}>Log Out</Text>
+      </TouchableOpacity>
+
     </View>
   );
 }
@@ -309,10 +363,10 @@ const styles = StyleSheet.create({
     width: '90%',
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 12,
+    padding: 20,
     borderRadius: 12,
     backgroundColor: colors.surface,
-    marginBottom: 10,
+    margin: 10,
   },
   healthTitle: {
     position: 'absolute',
@@ -322,7 +376,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.textSecondary,
     backgroundColor: colors.background,
-    paddingHorizontal: 4,
+    paddingHorizontal: 10,
+    padding: 4
   },
   healthRow: {
     flexDirection: 'row',
@@ -380,5 +435,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginLeft: 3,
     fontWeight: 'bold',
-  }
+  },
+  logoutButton: {
+  marginTop: 20,
+  backgroundColor: "#ff3b30",
+  paddingVertical: 12,
+  paddingHorizontal: 20,
+  borderRadius: 10,
+  alignItems: "center",
+},
+
+logoutText: {
+  color: "white",
+  fontSize: 16,
+  fontWeight: "600",
+}
 });

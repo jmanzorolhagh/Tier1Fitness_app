@@ -16,6 +16,30 @@ import {
 const prisma = new PrismaClient();
 const app = express();
 
+function formatComment(c: any) {
+  return {
+    id: c.id,
+    content: c.content,
+    createdAt: c.createdAt.toISOString(),
+    author: {
+      id: c.author.id,
+      username: c.author.username,
+      profilePicUrl: c.author.profilePicUrl
+    },
+    replies: c.replies?.map((r: any) => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.createdAt.toISOString(),
+      author: {
+        id: r.author.id,
+        username: r.author.username,
+        profilePicUrl: r.author.profilePicUrl
+      }
+    })) ?? []
+  };
+}
+
+
 app.use(cors());
 app.use(express.json());
 
@@ -195,53 +219,49 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
 });
 
 // 4. Get All Posts
+
 app.get('/api/posts', async (req: Request, res: Response) => {
   try {
-    // Get the user asking for the posts (optional)
-    const currentUserId = req.query.userId as string;
+    const { userId } = req.query;
+    const currentUserId = typeof userId === 'string' ? userId : undefined;
 
     const postsFromDb = await prisma.post.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        author: true, 
+        author: true,
         _count: { select: { likes: true, comments: true } },
-        // KEY CHANGE: Fetch likes ONLY for this specific user
-        likes: currentUserId ? {
-          where: { userId: currentUserId }
-        } : false
+        likes: currentUserId
+          ? {
+              where: { userId: currentUserId }
+            }
+          : false
       }
     });
 
-    const postsToSend: ApiPost[] = postsFromDb.map(post => {
-      const publicAuthor: ApiPublicUser = {
+    const postsToSend: ApiPost[] = postsFromDb.map((post) => ({
+      id: post.id,
+      caption: post.caption,
+      imageUrl: post.imageUrl ?? undefined, // prisma: string | null → API: string | undefined
+      postType: post.postType as ApiPostType,
+      createdAt: post.createdAt.toISOString(),
+      author: {
         id: post.author.id,
         username: post.author.username,
         profilePicUrl: post.author.profilePicUrl
-      };
+      },
+      likeCount: post._count.likes,
+      commentCount: post._count.comments,
+      hasLiked: Array.isArray(post.likes) && post.likes.length > 0
+    }));
 
-      // Check if the 'likes' array has any entries.
-      // If yes, it means THIS user liked THIS post.
-      const userHasLiked = post.likes ? post.likes.length > 0 : false;
-
-      return {
-        id: post.id,
-        caption: post.caption,
-        imageUrl: post.imageUrl || undefined,
-        postType: post.postType as ApiPostType, 
-        createdAt: post.createdAt.toISOString(),
-        author: publicAuthor,
-        likeCount: post._count.likes,
-        commentCount: post._count.comments,
-        hasLiked: userHasLiked 
-      };
-    });
-    
     res.json(postsToSend);
   } catch (error) {
-    console.error('Failed to get posts:', error);
-    res.status(500).json({ error: 'An error occurred while retrieving posts.' });
+    console.error('Failed to fetch posts:', error);
+    res.status(500).json({ error: 'Failed to fetch posts' });
   }
 });
+
+
 
 // 5. Create Post
 app.post('/api/posts', async (req: Request, res: Response) => {
@@ -498,4 +518,159 @@ app.post('/api/posts/like', async (req: Request, res: Response) => {
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
+});
+
+// ✅ Get all posts from one user
+app.get('/api/users/:userId/posts', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const posts = await prisma.post.findMany({
+      where: { authorId: userId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        author: true,
+        comments: true,
+        likes: true,
+      }
+    });
+
+    res.json(posts);
+
+  } catch (error) {
+    console.error("Failed to fetch user posts:", error);
+    res.status(500).json({ error: "Failed to load user posts" });
+  }
+});
+
+
+app.get('/api/posts/:postId/comments', async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const comments = await prisma.comment.findMany({
+      where: { postId, parentId: null },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        author: true,
+        replies: {
+          include: { author: true },
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    });
+
+    const formatted = comments.map(formatComment);
+    res.json(formatted);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to load comments" });
+  }
+});
+
+// Create top-level comment
+app.post('/api/posts/:postId/comments', async (req: Request, res: Response) => {
+  try {
+    const { postId } = req.params;
+    const { userId, content } = req.body;
+
+    const newComment = await prisma.comment.create({
+      data: {
+        content: content.trim(),
+        authorId: userId,
+        postId,
+        parentId: null
+      },
+      include: { author: true }
+    });
+
+    await prisma.post.update({
+      where: { id: postId },
+      data: { commentCount: { increment: 1 } }
+    });
+
+
+    res.json(formatComment({ ...newComment, replies: [] }));
+
+  } catch (error) {
+    console.error("Failed to create comment:", error);
+    res.status(500).json({ error: "Failed to create comment" });
+  }
+});
+
+// Reply to an existing comment
+app.post('/api/comments/:commentId/reply', async (req: Request, res: Response) => {
+  try {
+    const { commentId } = req.params;
+    const { userId, content } = req.body;
+
+    const parent = await prisma.comment.findUnique({
+      where: { id: commentId }
+    });
+
+    if (!parent) {
+      return res.status(404).json({ error: "Parent comment not found" });
+    }
+
+    const reply = await prisma.comment.create({
+      data: {
+        content: content.trim(),
+        authorId: userId,
+        postId: parent.postId,
+        parentId: commentId
+      },
+      include: { author: true }
+    });
+
+    await prisma.post.update({
+      where: { id: parent.postId },
+      data: { commentCount: { increment: 1 } }
+    });
+
+
+    res.json({
+      id: reply.id,
+      content: reply.content,
+      createdAt: reply.createdAt.toISOString(),
+      author: {
+        id: reply.author.id,
+        username: reply.author.username,
+        profilePicUrl: reply.author.profilePicUrl
+      }
+    });
+
+  } catch (error) {
+    console.error("Failed to post reply:", error);
+    res.status(500).json({ error: "Failed to reply" });
+  }
+});
+
+// Delete a comment
+app.delete('/api/comments/:commentId', async (req: Request, res: Response) => {
+  try {
+    const { commentId } = req.params;
+
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    await prisma.post.update({
+      where: { id: comment.postId },
+      data: { commentCount: { decrement: 1 } }
+    });
+
+    await prisma.comment.delete({
+      where: { id: commentId }
+    });
+
+    res.json({ success: true, deletedId: commentId });
+  } catch (error) {
+    console.error("Failed to delete comment:", error);
+    res.status(500).json({ error: "Failed to delete comment" });
+  }
 });

@@ -49,6 +49,8 @@ model Post {
   imageUrl  String?  
   postType  PostType
   createdAt DateTime @default(now())
+  commentCount Int @default(0)
+
 
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId  String  
@@ -67,6 +69,10 @@ model Comment {
 
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId    String
+
+  parentId  String? 
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
 }
 
 model HealthData {

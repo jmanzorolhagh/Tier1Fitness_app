@@ -29,9 +29,11 @@ export enum PostType {
 
 export interface Comment {
   id: string;
-  author: PublicUser; 
   content: string;
   createdAt: string;
+  author: PublicUser;
+
+  replies?: Comment[];
 }
 
 
