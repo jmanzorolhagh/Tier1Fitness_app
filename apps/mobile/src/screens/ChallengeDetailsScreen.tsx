@@ -7,10 +7,12 @@ import {
   ActivityIndicator, 
   Image, 
   Alert, 
-  TouchableOpacity 
+  TouchableOpacity,
+  Share // <--- Imported for native sharing
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import api from '../services/api';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -48,10 +50,28 @@ export const ChallengeDetailsScreen = () => {
     }
   };
 
+  const handleInvite = async () => {
+  if (!challengeData) return;
+  
+  const goalLabel = challengeData.goalType === 'STEPS' ? 'Steps' : 'Calories';
+  const goalNum = challengeData.goalValue.toLocaleString();
+
+  const appLink = "https://github.com/jmanzorolhagh/Tier1Fitness_app"; 
+
+  try {
+    await Share.share({
+      message: `Come join my team challenge "${challengeData.title}" on Tier1Fitness! ⚔️\n\nTeam Goal: ${goalNum} ${goalLabel}.\n\nDownload the app here: ${appLink}`,
+      url: appLink, 
+    });
+  } catch (error: any) {
+  }
+};
+
   if (loading || !challengeData) {
     return <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>;
   }
 
+  // --- Logic & Display Vars ---
   const isSteps = challengeData.goalType === 'STEPS';
   const goalValue = challengeData.goalValue;
   const currentTotal = isSteps ? challengeData.groupProgress.steps : challengeData.groupProgress.calories;
@@ -74,53 +94,59 @@ export const ChallengeDetailsScreen = () => {
         <Text style={styles.rank}>#{index + 1}</Text>
         <Image source={{ uri: item.profilePicUrl }} style={styles.avatar} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.username}>{item.username}</Text>
+          <Text style={styles.username} numberOfLines={1} adjustsFontSizeToFit>
+            {item.username}
+          </Text>
           <Text style={styles.contributionLabel}>Contribution</Text>
         </View>
         <Text style={[styles.score, { color: themeColor }]}>
           {score.toLocaleString()} {isSteps ? 'steps' : 'kcal'}
         </Text>
-        <View style={{ marginLeft: 8 }}>
-        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} style={{ marginLeft: 4 }} />
       </TouchableOpacity>
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <Text style={styles.title}>{challengeData.title}</Text>
-        <Text style={styles.description}>{challengeData.description}</Text>
-        
-        <View style={styles.groupStatsCard}>
-          <Text style={styles.groupLabel}>TEAM PROGRESS</Text>
-          <Text style={{ marginBottom: 8 }}>
-          <Text style={[styles.bigNumber, { color: themeColor }]}>
-            {currentTotal.toLocaleString()} 
-          </Text>
-          <Text style={styles.goalNumber}>
-            {' '}/ {goalValue.toLocaleString()}
-          </Text>
-        </Text>
-          
-          <ProgressBar current={currentTotal} target={goalValue} color={themeColor} />
-          
-          <Text style={styles.percentText}>{percentage}% Completed</Text>
-        </View>
-      </View>
+      <FlatList
+        data={challengeData.participants}
+        renderItem={renderParticipant}
+        keyExtractor={item => item.userId}
+        contentContainerStyle={{ paddingBottom: 30 }}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={() => (
+          <View style={styles.header}>
+            <Text style={styles.title}>{challengeData.title}</Text>
+            <Text style={styles.description}>{challengeData.description}</Text>
+            
+            <View style={styles.groupStatsCard}>
+              <Text style={styles.groupLabel}>TEAM PROGRESS</Text>
+              
+              {/* Fixed Layout: Single Text block prevents truncation/overlap */}
+              <Text style={{ marginBottom: 8 }}>
+                <Text style={[styles.bigNumber, { color: themeColor }]}>
+                  {currentTotal.toLocaleString()}
+                </Text>
+                <Text style={styles.goalNumber}>
+                   {' '}/ {goalValue.toLocaleString()}
+                </Text>
+              </Text>
+              
+              <ProgressBar current={currentTotal} target={goalValue} color={themeColor} />
+              <Text style={styles.percentText}>{percentage}% Completed</Text>
 
-      {/* Participants List */}
-      <View style={styles.listContainer}>
-        <Text style={styles.sectionHeader}>Participants ({challengeData.participants.length})</Text>
-        <FlatList
-          data={challengeData.participants}
-          renderItem={renderParticipant}
-          keyExtractor={item => item.userId}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
+              {/* Invite Button inside the card */}
+              <TouchableOpacity style={[styles.inviteButton, { borderColor: themeColor + '40' }]} onPress={handleInvite}>
+                 <Ionicons name="person-add" size={18} color={themeColor} style={{ marginRight: 8 }} />
+                 <Text style={[styles.inviteText, { color: themeColor }]}>Invite Friends</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.sectionHeader}>Participants ({challengeData.participants.length})</Text>
+          </View>
+        )}
+      />
     </View>
   );
 };
@@ -139,20 +165,44 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    marginBottom: 10,
   },
   groupLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: 'bold', marginBottom: 10, letterSpacing: 1 },
   bigNumber: { fontSize: 32, fontWeight: '900' },
-  goalNumber: { fontSize: 18, color: colors.textSecondary, marginBottom: 4 },
+  goalNumber: { fontSize: 18, color: colors.textSecondary },
   percentText: { textAlign: 'right', color: colors.textSecondary, marginTop: 8, fontSize: 12 },
   
   // Progress Bar
   progressContainer: { height: 12, backgroundColor: '#0F172A', borderRadius: 6, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 6 },
 
-  // List
-  listContainer: { flex: 1, paddingHorizontal: 20 },
-  sectionHeader: { color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 15, marginTop: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 10 },
+  // Invite Button
+  inviteButton: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: colors.background, // Slightly distinctive background
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  inviteText: {
+    fontWeight: '700',
+    fontSize: 14,
+  },
+
+  // List Items
+  sectionHeader: { color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 15, marginTop: 20 },
+  row: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: colors.surface, 
+    padding: 12, 
+    marginHorizontal: 20, // Since it's inside FlatList now, we add margin here
+    borderRadius: 12, 
+    marginBottom: 10 
+  },
   rank: { color: colors.textSecondary, fontWeight: 'bold', width: 30, fontSize: 16 },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12, backgroundColor: '#333' },
   username: { color: colors.text, fontWeight: '600', fontSize: 15 },
