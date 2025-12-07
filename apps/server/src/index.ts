@@ -205,28 +205,109 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'An error occurred.' });
   }
 });
-app.put('/api/users/:id', async (req: Request, res: Response) => {
+app.get('/api/users/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { bio, profilePicUrl } = req.body;
+    const requesterId = req.query.requesterId as string;
 
-    const updatedUser = await prisma.user.update({
+    const userFromDb = await prisma.user.findUnique({
       where: { id },
-      data: { 
-        bio, 
-        profilePicUrl 
+      include: {
+        posts: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          // We need counts for the PostCard to work properly
+          include: {
+            _count: { select: { likes: true, comments: true } },
+            likes: requesterId ? { where: { userId: requesterId } } : false
+          }
+        },
+        _count: { 
+          select: { followers: true, following: true }
+        }
       }
     });
 
-    res.json({ 
-      id: updatedUser.id,
-      username: updatedUser.username,
-      bio: updatedUser.bio,
-      profilePicUrl: updatedUser.profilePicUrl 
+    if (!userFromDb) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // 1. Calculate Badges (Keep existing logic)
+    const badges: any[] = [];
+    if (userFromDb.posts.length > 0) badges.push({ label: 'Socialite', icon: 'camera', color: '#8B5CF6' });
+    
+    const challengeCount = await prisma.challengeParticipant.count({ where: { userId: id } });
+    if (challengeCount > 0) badges.push({ label: 'Challenger', icon: 'trophy', color: '#F59E0B' });
+
+    const hit10k = await prisma.healthData.findFirst({ where: { userId: id, dailySteps: { gte: 10000 } } });
+    if (hit10k) badges.push({ label: '10k Club', icon: 'ribbon', color: '#10B981' });
+
+    // 2. Prepare Posts (CRITICAL FIX HERE)
+    // We must map over the raw posts and attach the 'author' object
+    const postsToSend = userFromDb.posts.map(post => {
+        const isLiked = post.likes ? post.likes.length > 0 : false;
+        
+        return {
+            id: post.id,
+            caption: post.caption,
+            imageUrl: post.imageUrl || undefined,
+            postType: post.postType,
+            createdAt: post.createdAt.toISOString(),
+            // MANUALLY ATTACH AUTHOR (This fixes the crash)
+            author: {
+                id: userFromDb.id,
+                username: userFromDb.username,
+                profilePicUrl: userFromDb.profilePicUrl
+            },
+            likeCount: post._count.likes,
+            commentCount: post._count.comments,
+            hasLiked: isLiked
+        };
     });
+
+    // 3. Follow Status
+    let isFollowing = false;
+    if (requesterId) {
+      const followRecord = await prisma.follow.findUnique({
+        where: { followerId_followingId: { followerId: requesterId, followingId: id } }
+      });
+      isFollowing = !!followRecord;
+    }
+
+    // 4. Health Stats
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const healthData = await prisma.healthData.findFirst({
+      where: { userId: id, date: { gte: today, lt: tomorrow } }
+    });
+
+    const healthStatsToSend = {
+      dailySteps: healthData?.dailySteps || 0,
+      dailyCalories: healthData?.dailyCalories || 0,
+    };
+    
+    // 5. Final Response
+    const profile = {
+      id: userFromDb.id,
+      username: userFromDb.username,
+      bio: userFromDb.bio || undefined,
+      profilePicUrl: userFromDb.profilePicUrl,
+      followerCount: userFromDb._count.followers,
+      followingCount: userFromDb._count.following,
+      posts: postsToSend, // <--- Use the processed posts array
+      healthStats: healthStatsToSend,
+      isFollowing,
+      badges
+    };
+    
+    res.json(profile);
+    
   } catch (error) {
-    console.error('Update failed:', error);
-    res.status(500).json({ error: "Failed to update profile" });
+    console.error(`Failed to get user ${req.params.id}:`, error);
+    res.status(500).json({ error: 'An error occurred.' });
   }
 });
 // 4. Get All Posts
