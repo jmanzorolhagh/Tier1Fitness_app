@@ -13,6 +13,7 @@ import { ProgressScreen } from '../screens/ProgressScreen';
 import { ChallengeScreen } from '../screens/ChallengeScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { CommentsScreen } from '../screens/CommentsScreen'; 
+import { ChallengeDetailsScreen } from '../screens/ChallengeDetailsScreen';
 import { FollowersScreen, FollowingScreen } from '../screens/FollowersScreen';
 
 import { colors } from '../theme/colors';
@@ -28,7 +29,7 @@ export type RootStackParamList = {
   
   Followers: { userId: string, title: string };
   Following: { userId: string, title: string };
-
+  ChallengeDetails: { challengeId: string };
   HomeFeed: undefined;
   Challenges: undefined;
   CreatePost: undefined;
@@ -160,6 +161,16 @@ export const AppNavigator = () => (
           headerTintColor: colors.text,
           headerTitleStyle: { fontWeight: 'bold' }
         }}
+      />
+      <Stack.Screen 
+        name="ChallengeDetails" 
+        component={ChallengeDetailsScreen} 
+        options={{ 
+          title: 'Challenge Status', 
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text
+        }} 
       />
 
       {/* Follower Lists */}
