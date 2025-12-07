@@ -566,7 +566,74 @@ app.post('/api/posts/:postId/comments', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to create comment' });
   }
 });
+app.post('/api/users/follow', async (req: Request, res: Response) => {
+  try {
+    const { followerId, followingId } = req.body;
 
+    if (followerId === followingId) {
+      return res.status(400).json({ error: "Cannot follow yourself" });
+    }
+
+    const existingFollow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: { followerId, followingId }
+      }
+    });
+
+    if (existingFollow) {
+      await prisma.follow.delete({
+        where: { followerId_followingId: { followerId, followingId } }
+      });
+    } else {
+      await prisma.follow.create({
+        data: { followerId, followingId }
+      });
+    }
+
+    res.json({ isFollowing: !existingFollow });
+
+  } catch (error) {
+    console.error('Failed to toggle follow:', error);
+    res.status(500).json({ error: "Failed to follow user" });
+  }
+});
+app.get('/api/users/:userId/followers', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const followers = await prisma.follow.findMany({
+      where: { followingId: userId },
+      select: {
+        follower: {
+          select: { id: true, username: true, profilePicUrl: true }
+        }
+      }
+    });
+
+    const followerList = followers.map(f => f.follower);
+    res.json(followerList);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retrieve followers' });
+  }
+});
+
+app.get('/api/users/:userId/following', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const following = await prisma.follow.findMany({
+      where: { followerId: userId },
+      select: {
+        following: {
+          select: { id: true, username: true, profilePicUrl: true }
+        }
+      }
+    });
+
+    const followingList = following.map(f => f.following);
+    res.json(followingList);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retrieve following list' });
+  }
+});
 
 
 const PORT = 3000;
