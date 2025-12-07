@@ -2,25 +2,37 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+// Screens
 import { HomeFeedScreen } from '../screens/HomeFeedScreen';
-import { ProfileScreen } from '../screens/ProfileScreen';
 import { CreatePostScreen } from '../screens/CreatePostScreen';
-import { ProgressScreen } from '../screens/ProgressScreen';
 import { SplashScreen } from '../screens/SplashScreen';
+import { ProgressScreen } from '../screens/ProgressScreen';
+import { ChallengeScreen } from '../screens/ChallengeScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
+import { CommentsScreen } from '../screens/CommentsScreen'; 
+import { FollowersScreen, FollowingScreen } from '../screens/FollowersScreen';
+
 import { colors } from '../theme/colors';
-import { ChallengeScreen } from 'src/screens/ChallengeScreen';
+import { Post } from '@tier1fitness_app/types';
 
 export type RootStackParamList = {
   Splash: undefined;
   Tabs: undefined;
+  
+  Profile: { userId?: string }; 
+  
+  Comments: { post: Post }; 
+  
+  Followers: { userId: string, title: string };
+  Following: { userId: string, title: string };
+
   HomeFeed: undefined;
-  Progress: undefined;
   Challenges: undefined;
   CreatePost: undefined;
-  Profile: {userId: string};
+  Progress: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootStackParamList>();
@@ -31,10 +43,10 @@ const TabBarIcon = ({ focused, label, iconName }: {
   label: string, 
   iconName: keyof typeof Ionicons.glyphMap 
 }) => {
-  const color = focused ? colors.background : colors.textSecondary; 
+  const color = focused ? colors.primary : colors.textSecondary; 
   return (
     <View style={styles.tabIconContainer}>
-      <Ionicons name={iconName} size={30} color={color} />
+      <Ionicons name={iconName} size={24} color={color} />
       <Text style={[styles.tabIconText, { color }]}>
         {label}
       </Text>
@@ -47,30 +59,23 @@ const TabsNavigator = () => (
     screenOptions={{
       tabBarShowLabel: false,
       tabBarStyle: {
-        height: 70,
-        backgroundColor: colors.text,
-        borderTopWidth: 0,
-      },
-      tabBarItemStyle: {
-        justifyContent: 'flex-start',
+        height: 80,
+        backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
         paddingTop: 10,
-        alignItems: 'center',
       },
       headerStyle: {
         backgroundColor: colors.background,
-        shadowOpacity: 0.05,
-        elevation: 3,
-        height: 90,
+        shadowOpacity: 0,
+        elevation: 0,
       },
-      headerTitleAlign: 'left',
       headerTitleStyle: {
         color: colors.text,
-        fontWeight: 'bold',
+        fontWeight: '800',
         fontSize: 24,
       },
-      headerTitleContainerStyle: {
-        paddingLeft: 18,
-      },
+      headerTitleAlign: 'left',
     }}
   >
     <Tab.Screen
@@ -84,6 +89,26 @@ const TabsNavigator = () => (
       }}
     />
     <Tab.Screen
+      name="Challenges"
+      component={ChallengeScreen}
+      options={{
+        title: 'Challenges',
+        tabBarIcon: ({ focused }) => (
+          <TabBarIcon focused={focused} label="Challenges" iconName="flash-outline" />
+        ),
+      }}
+    />
+    <Tab.Screen
+      name="CreatePost"
+      component={CreatePostScreen}
+      options={{
+        title: 'New Post',
+        tabBarIcon: ({ focused }) => (
+          <TabBarIcon focused={focused} label="Post" iconName="add-circle-outline" />
+        ),
+      }}
+    />
+    <Tab.Screen
       name="Progress"
       component={ProgressScreen}
       options={{
@@ -93,23 +118,13 @@ const TabsNavigator = () => (
         ),
       }}
     />
-      <Tab.Screen
-      name="Challenges"
-      component={ChallengeScreen}
-      options={{
-        title: 'Challenges',
-        tabBarIcon: ({ focused }) => (
-          <TabBarIcon focused={focused} label="Challenges" iconName="flash-outline" />
-        ),
-      }}
-    />  
     <Tab.Screen
-      name="CreatePost"
-      component={CreatePostScreen}
+      name="Profile"
+      component={ProfileScreen}
       options={{
-        title: 'New Post',
+        title: 'My Profile',
         tabBarIcon: ({ focused }) => (
-          <TabBarIcon focused={focused} label="Post" iconName="add-circle-outline" />
+          <TabBarIcon focused={focused} label="Profile" iconName="person-outline" />
         ),
       }}
     />
@@ -121,17 +136,56 @@ export const AppNavigator = () => (
     <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Tabs" component={TabsNavigator} />
+      
       <Stack.Screen 
         name="Profile" 
         component={ProfileScreen} 
         options={{ 
-          presentation: 'modal', 
+          presentation: 'card', 
           headerShown: true,     
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
-          headerTitle: '',      
+          headerTitle: '',       
         }} 
       />
+
+      <Stack.Screen
+        name="Comments"
+        component={CommentsScreen}
+        options={{
+          presentation: 'modal', 
+          headerShown: true,
+          title: 'Comments',
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: 'bold' }
+        }}
+      />
+
+      {/* Follower Lists */}
+      <Stack.Screen
+        name="Followers"
+        component={FollowersScreen}
+        options={({ route }) => ({
+          title: route.params.title,
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerBackTitleVisible: false,
+        })}
+      />
+      <Stack.Screen
+        name="Following"
+        component={FollowingScreen}
+        options={({ route }) => ({
+          title: route.params.title,
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerBackTitleVisible: false,
+        })}
+      />
+
     </Stack.Navigator>
   </NavigationContainer>
 );
@@ -139,10 +193,12 @@ export const AppNavigator = () => (
 const styles = StyleSheet.create({
   tabIconContainer: {
     alignItems: 'center',
-    width: '100%',
+    justifyContent: 'center',
+    width: 60,
   },
   tabIconText: {
-    fontSize: 12,
+    fontSize: 10,
     marginTop: 4,
+    fontWeight: '600',
   },
 });
