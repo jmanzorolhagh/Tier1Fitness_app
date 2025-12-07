@@ -248,9 +248,11 @@ export function ProfileScreen() {
           keyExtractor={(item) => item.id}
           ListHeaderComponent={renderHeader}
           contentContainerStyle={styles.scrollContent}
+
         />
       ) : (
         <FlatList
+          key={`flatlist-grid`}
           data={profile.posts}
           renderItem={renderGridItem}
           keyExtractor={(item) => item.id}
