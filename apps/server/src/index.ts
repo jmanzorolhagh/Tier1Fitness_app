@@ -356,7 +356,7 @@ app.get('/api/leaderboard', async (req: Request, res: Response) => {
 
 // --- 8. CHALLENGES (UPDATED) ---
 
-// Get Active Challenges
+// Get Active Challenges (List View) - Now with Progress!
 app.get('/api/challenges', async (req: Request, res: Response) => {
   try {
     const challenges = await prisma.challenge.findMany({
@@ -368,31 +368,123 @@ app.get('/api/challenges', async (req: Request, res: Response) => {
       orderBy: { startDate: 'desc' }
     });
 
-    const response = challenges.map(c => ({
-      id: c.id,
-      title: c.title,
-      description: c.description,
-      startDate: c.startDate.toISOString(),
-      endDate: c.endDate.toISOString(),
-      participantCount: c.participants.length,
-      participantIds: c.participants.map(p => p.userId), 
-      goalType: c.goalType,
-      goalValue: c.goalValue,
-      // -------------------------
-      creator: {
-        id: c.creator.id,
-        username: c.creator.username,
-        profilePicUrl: c.creator.profilePicUrl
-      }
+    // We need to calculate progress for EACH challenge in the list
+    const challengesWithProgress = await Promise.all(challenges.map(async (c) => {
+      // 1. Sum up all health data for participants within the challenge dates
+      const aggregate = await prisma.healthData.aggregate({
+        _sum: {
+          dailySteps: true,
+          dailyCalories: true
+        },
+        where: {
+          userId: { in: c.participants.map(p => p.userId) }, // Filter by participants
+          date: { gte: c.startDate, lte: c.endDate }         // Filter by date range
+        }
+      });
+
+      // 2. Determine the current value based on the goal type
+      const currentSteps = aggregate._sum.dailySteps || 0;
+      const currentCalories = aggregate._sum.dailyCalories || 0;
+      
+      return {
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        startDate: c.startDate.toISOString(),
+        endDate: c.endDate.toISOString(),
+        participantCount: c.participants.length,
+        participantIds: c.participants.map(p => p.userId),
+        goalType: c.goalType,
+        goalValue: c.goalValue,
+        // NEW FIELD: The actual progress number
+        currentProgress: c.goalType === 'STEPS' ? currentSteps : currentCalories,
+        creator: {
+          id: c.creator.id,
+          username: c.creator.username,
+          profilePicUrl: c.creator.profilePicUrl
+        }
+      };
     }));
 
-    res.json(response);
+    res.json(challengesWithProgress);
   } catch (error) {
     console.error('Failed to get challenges:', error);
     res.status(500).json({ error: "Failed to fetch challenges" });
   }
 });
+app.get('/api/challenges/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
 
+    // 1. Fetch Challenge Basic Info
+    const challenge = await prisma.challenge.findUnique({
+      where: { id },
+      include: { creator: true }
+    });
+
+    if (!challenge) return res.status(404).json({ error: "Challenge not found" });
+
+    // 2. Fetch All Participants
+    const participants = await prisma.challengeParticipant.findMany({
+      where: { challengeId: id },
+      include: { 
+        user: { 
+          select: { id: true, username: true, profilePicUrl: true } 
+        } 
+      }
+    });
+
+    // 3. AGGREGATE STATS: Calculate total steps/calories for each user within challenge dates
+    // We map over participants and run an aggregation query for each.
+    const leaderboardWithStats = await Promise.all(participants.map(async (p) => {
+      const stats = await prisma.healthData.aggregate({
+        _sum: {
+          dailySteps: true,
+          dailyCalories: true
+        },
+        where: {
+          userId: p.userId,
+          // STRICT FILTER: Only count data logged AFTER challenge start and BEFORE end
+          date: {
+            gte: challenge.startDate,
+            lte: challenge.endDate
+          }
+        }
+      });
+
+      return {
+        userId: p.userId,
+        username: p.user.username,
+        profilePicUrl: p.user.profilePicUrl,
+        // Default to 0 if no data found
+        totalSteps: stats._sum.dailySteps || 0,
+        totalCalories: stats._sum.dailyCalories || 0,
+      };
+    }));
+
+    // 4. Calculate Group Totals (Collaborative Logic)
+    const groupTotalSteps = leaderboardWithStats.reduce((sum, p) => sum + p.totalSteps, 0);
+    const groupTotalCalories = leaderboardWithStats.reduce((sum, p) => sum + p.totalCalories, 0);
+
+    // 5. Return combined data
+    res.json({
+      ...challenge,
+      participants: leaderboardWithStats.sort((a, b) => {
+        // Sort by the challenge's specific goal type
+        if (challenge.goalType === 'CALORIES') return b.totalCalories - a.totalCalories;
+        return b.totalSteps - a.totalSteps;
+      }),
+      groupProgress: {
+        steps: groupTotalSteps,
+        calories: groupTotalCalories
+      }
+    });
+
+  } catch (error) {
+    console.error('Failed to get challenge details:', error);
+    res.status(500).json({ error: "Failed to fetch challenge details" });
+  }
+});
 // Create Challenge
 app.post('/api/challenges', async (req: Request, res: Response) => {
   try {
