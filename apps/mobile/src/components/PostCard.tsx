@@ -14,10 +14,8 @@ type PostCardProps = {
   post: Post;
 };
 
-// Define navigation type to access the 'Profile' route
 type PostCardNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Helper: Visual styles for different post categories
 const getPostTypeDetails = (type: PostType) => {
   switch (type) {
     case PostType.WORKOUT:
@@ -35,7 +33,6 @@ const getPostTypeDetails = (type: PostType) => {
   }
 };
 
-// Helper: Format date
 const formatTimeAgo = (isoDate: string) => {
   const diff = (Date.now() - new Date(isoDate).getTime()) / 1000;
   if (diff < 60) return `${Math.floor(diff)}s ago`;
@@ -82,28 +79,28 @@ export const PostCard = ({ post }: PostCardProps) => {
     }
   };
 
-  // --- NAVIGATION HANDLER ---
   const goToProfile = () => {
     navigation.navigate('Profile', { userId: post.author.id });
+  };
+
+  const goToComments = () => {
+    navigation.navigate('Comments', { post });
   };
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        {/* Clickable Avatar */}
         <TouchableOpacity onPress={goToProfile}>
           <Image source={{ uri: post.author.profilePicUrl }} style={styles.avatar} />
         </TouchableOpacity>
         
         <View style={styles.headerText}>
-          {/* Clickable Name */}
           <TouchableOpacity onPress={goToProfile}>
             <Text style={styles.username}>{post.author.username}</Text>
           </TouchableOpacity>
           <Text style={styles.timestamp}>{timeAgo}</Text> 
         </View>
         
-        {/* Post Type Tag */}
         <View style={[styles.badge, { backgroundColor: typeDetails.color + '20' }]}> 
           <Ionicons name={typeDetails.icon as any} size={12} color={typeDetails.color} style={{ marginRight: 4 }} />
           <Text style={[styles.badgeText, { color: typeDetails.color }]}>
@@ -141,10 +138,10 @@ export const PostCard = ({ post }: PostCardProps) => {
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.actionItem}>
+        <TouchableOpacity style={styles.actionItem} onPress={goToComments}>
           <Feather name="message-circle" size={24} color={colors.text} />
           <Text style={styles.actionText}>{post.commentCount}</Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );
