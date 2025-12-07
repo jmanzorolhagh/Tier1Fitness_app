@@ -1,19 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
-import { colors } from '../theme/colors';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 interface VictoryChartProps {
   data: { label: string; steps: number }[];
-  color: string; // Dynamic color (Blue or Green)
+  color: string; 
 }
 
 export const VictoryChart: React.FC<VictoryChartProps> = ({ data, color }) => {
   if (!data || data.length === 0) return null;
 
-  // Prepare data for chart library
   const chartData = {
     labels: data.map(d => d.label),
     datasets: [{ data: data.map(d => d.steps) }]
@@ -25,29 +23,45 @@ export const VictoryChart: React.FC<VictoryChartProps> = ({ data, color }) => {
       
       <BarChart
         data={chartData}
-        width={SCREEN_WIDTH - 80} // Card width minus padding
+        width={SCREEN_WIDTH - 64} 
         height={180}
         yAxisLabel=""
         yAxisSuffix=""
         chartConfig={{
+          // 1. Force Background Transparency
           backgroundColor: 'transparent',
-          backgroundGradientFrom: 'transparent',
-          backgroundGradientTo: 'transparent',
+          backgroundGradientFrom: '#fff', // Color doesn't matter if opacity is 0
+          backgroundGradientFromOpacity: 0,
+          backgroundGradientTo: '#fff',
+          backgroundGradientToOpacity: 0,
+          
+          // 2. Force Bars to be SOLID (No fade)
+          fillShadowGradient: color,
+          fillShadowGradientOpacity: 1,
+          fillShadowGradientFrom: color,
+          fillShadowGradientFromOpacity: 1,
+
           decimalPlaces: 0,
-          // Use the prop color for the bars
-          color: (opacity = 1) => {
-            // Convert hex to rgb for opacity handling if needed, 
-            // or just return the hex if opacity is 1
-            return color; 
-          },
-          labelColor: (opacity = 1) => colors.textSecondary,
+          color: (opacity = 1) => color,
+          labelColor: () => '#FFFFFF',
+          
           barPercentage: 0.6,
+          propsForBackgroundLines: {
+            strokeDasharray: "", 
+            stroke: "rgba(255,255,255,0.1)", 
+            strokeWidth: 1
+          }
         }}
         verticalLabelRotation={0}
         showValuesOnTopOfBars
         fromZero
-        withInnerLines={false} // Cleaner look
-        style={{ paddingRight: 0 }}
+        withInnerLines={true}
+        style={{ 
+          paddingRight: 0,
+          marginTop: 10,
+          // Extra safety to ensure the View holding the SVG is transparent
+          backgroundColor: 'transparent' 
+        }}
       />
     </View>
   );
@@ -59,12 +73,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 15,
     borderTopWidth: 1,
+    width: '100%',
   },
   title: {
-    fontWeight: 'bold',
+    fontWeight: '800',
     fontSize: 12,
     marginBottom: 5,
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     textTransform: 'uppercase'
   }
 });
