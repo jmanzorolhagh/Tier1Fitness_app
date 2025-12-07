@@ -8,20 +8,19 @@ import {
   Alert, 
   Dimensions, 
   FlatList, 
-  TouchableOpacity 
+  TouchableOpacity,
+  RefreshControl,
+  Modal,
+  TextInput
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { RootStackParamList } from '../navigation/AppNavigator'; // Ensure correct import path
 import { UserProfile, Post } from '@tier1fitness_app/types';
 import api from '../services/api';
 import { colors } from '../theme/colors';
 import { PostCard } from '../components/PostCard'; 
 import { UserService } from '../services/userService';
-
-type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'>;
-type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
 const { width } = Dimensions.get('window');
 const POST_GRID_SIZE = (width - 6) / 3;
@@ -29,28 +28,39 @@ const POST_GRID_SIZE = (width - 6) / 3;
 const defaultProfilePic = 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff';
 
 export function ProfileScreen() {
-  const route = useRoute<ProfileScreenRouteProp>();
-  const navigation = useNavigation<ProfileScreenNavigationProp>();
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
   
+  // If paramUserId is undefined, we assume it's "My Profile" tab
   const paramUserId = route.params?.userId;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'grid'>('posts');
   const [isFollowing, setIsFollowing] = useState(false); 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // Edit Mode State
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editBio, setEditBio] = useState('');
+  const [editPic, setEditPic] = useState('');
+
   const loadData = useCallback(async () => {
-    setLoading(true);
+    // Only show full loader if not refreshing
+    if (!refreshing) setLoading(true);
+    
     try {
       const user = await UserService.getUser();
       const myId = user?.id || null;
       setCurrentUserId(myId);
 
+      // Determine target: paramUserId (external) or myId (internal)
       const targetId = paramUserId || myId;
 
       if (!targetId) {
         setLoading(false);
+        setRefreshing(false);
         return; 
       }
 
@@ -60,12 +70,19 @@ export function ProfileScreen() {
       setProfile(data);
       setIsFollowing(data.isFollowing || false);
 
+      // Pre-fill edit form if it's my profile
+      if (data.id === myId) {
+        setEditBio(data.bio || '');
+        setEditPic(data.profilePicUrl || '');
+      }
+
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [paramUserId]);
+  }, [paramUserId, refreshing]);
 
   useFocusEffect(
     useCallback(() => {
@@ -73,16 +90,43 @@ export function ProfileScreen() {
     }, [loadData])
   );
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!currentUserId) return;
+
+    try {
+      // This calls the .put() method we just added to api.ts
+      await api.put(`/users/${currentUserId}`, {
+         bio: editBio,
+         profilePicUrl: editPic
+      });
+      
+      setEditModalVisible(false);
+      onRefresh(); // Refresh the screen to show the new Bio/Pic
+      Alert.alert("Success", "Profile updated!");
+      
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Failed to update profile.");
+    }
+  };
   const handleFollowToggle = async () => {
     if (!currentUserId || !profile) {
        Alert.alert('Login Required', 'You must be logged in to follow users.');
        return;
     }
 
-    setIsFollowing(prev => !prev);
+    const newStatus = !isFollowing;
+    setIsFollowing(newStatus);
+    
+    // Optimistic Update
     setProfile(prev => prev ? ({
       ...prev,
-      followerCount: prev.followerCount + (isFollowing ? -1 : 1)
+      followerCount: prev.followerCount + (newStatus ? 1 : -1)
     }) : null);
 
     try {
@@ -92,6 +136,7 @@ export function ProfileScreen() {
       });
     } catch (error) {
       console.error('Follow failed:', error);
+      setIsFollowing(!newStatus); // Revert
       Alert.alert('Error', 'Failed to update follow status.');
     }
   };
@@ -118,11 +163,11 @@ export function ProfileScreen() {
   };
 
   const goToFollowers = () => {
-    if (profile) navigation.navigate('Followers', { userId: profile.id, title: `${profile.username}'s Followers` });
+    if (profile) navigation.push('Followers', { userId: profile.id, title: `${profile.username}'s Followers` });
   };
 
   const goToFollowing = () => {
-    if (profile) navigation.navigate('Following', { userId: profile.id, title: `Following ${profile.username}` });
+    if (profile) navigation.push('Following', { userId: profile.id, title: `Following ${profile.username}` });
   };
 
   const renderHeader = () => {
@@ -156,7 +201,10 @@ export function ProfileScreen() {
 
         {isOwnProfile ? (
           <View style={{ alignItems: 'center', width: '100%' }}>
-            <TouchableOpacity style={[styles.actionButton, styles.editButton]}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.editButton]}
+              onPress={() => setEditModalVisible(true)}
+            >
                 <Text style={[styles.actionButtonText, { color: colors.text }]}>Edit Profile</Text>
             </TouchableOpacity>
             
@@ -223,7 +271,7 @@ export function ProfileScreen() {
     </View>
   );
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -231,7 +279,7 @@ export function ProfileScreen() {
     );
   }
 
-  if (!profile) {
+  if (!profile && !loading) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>Profile not found. Please log in.</Text>
@@ -241,25 +289,70 @@ export function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Edit Profile Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editModalVisible}
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
+            
+            <Text style={styles.label}>Profile Picture URL</Text>
+            <TextInput 
+              style={styles.input} 
+              value={editPic} 
+              onChangeText={setEditPic}
+              placeholder="https://..." 
+              placeholderTextColor="#666"
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.label}>Bio</Text>
+            <TextInput 
+              style={[styles.input, { height: 80, textAlignVertical: 'top' }]} 
+              value={editBio} 
+              onChangeText={setEditBio}
+              multiline 
+              placeholder="Tell us about yourself..."
+              placeholderTextColor="#666"
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)} style={styles.cancelButton}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleUpdateProfile} style={styles.saveButton}>
+                <Text style={styles.saveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Main List */}
       {activeTab === 'posts' ? (
         <FlatList
-          data={profile.posts}
+          data={profile?.posts || []}
           renderItem={renderPostItem}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={renderHeader}
           contentContainerStyle={styles.scrollContent}
-
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         />
       ) : (
         <FlatList
           key={`flatlist-grid`}
-          data={profile.posts}
+          data={profile?.posts || []}
           renderItem={renderGridItem}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={renderHeader}
           numColumns={3}
           contentContainerStyle={styles.scrollContent}
           columnWrapperStyle={styles.gridColumnWrapper}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         />
       )}
     </View>
@@ -272,7 +365,7 @@ const styles = StyleSheet.create({
   errorText: { color: colors.text, fontSize: 16 },
   scrollContent: { paddingBottom: 20 },
   header: { paddingTop: 10, alignItems: 'center', backgroundColor: colors.background, marginBottom: 10 },
-  profileImage: { width: 90, height: 90, borderRadius: 45, marginBottom: 12, borderWidth: 2, borderColor: colors.primary },
+  profileImage: { width: 90, height: 90, borderRadius: 45, marginBottom: 12, borderWidth: 2, borderColor: colors.primary, backgroundColor: '#333' },
   username: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 12 },
   bio: { color: colors.textSecondary, textAlign: 'center', marginBottom: 15, paddingHorizontal: 30 },
   statsContainer: { flexDirection: 'row', width: '90%', justifyContent: 'space-around', marginBottom: 20, paddingVertical: 10, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border },
@@ -295,6 +388,16 @@ const styles = StyleSheet.create({
   gridColumnWrapper: { gap: 2 },
   gridItemContainer: { width: POST_GRID_SIZE, height: POST_GRID_SIZE, backgroundColor: colors.surface, marginBottom: 2 },
   gridImage: { width: '100%', height: '100%' },
-  gridOverlay: { position: 'absolute', bottom: 4, left: 4, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 },
-  gridStatText: { color: 'white', fontSize: 10, marginLeft: 3, fontWeight: 'bold' }
+  
+  // Modal Styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: colors.surface, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 20, textAlign: 'center' },
+  label: { color: colors.textSecondary, marginBottom: 8, fontSize: 14 },
+  input: { backgroundColor: colors.background, color: colors.text, padding: 12, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: colors.border },
+  modalButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  cancelButton: { padding: 12 },
+  cancelText: { color: colors.textSecondary, fontWeight: '600' },
+  saveButton: { backgroundColor: colors.primary, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 },
+  saveText: { color: 'white', fontWeight: 'bold' }
 });

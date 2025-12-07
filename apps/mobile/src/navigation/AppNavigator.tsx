@@ -11,9 +11,9 @@ import { CreatePostScreen } from '../screens/CreatePostScreen';
 import { SplashScreen } from '../screens/SplashScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
 import { ChallengeScreen } from '../screens/ChallengeScreen';
+import { ChallengeDetailsScreen } from '../screens/ChallengeDetailsScreen'; // Ensure this file exists
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { CommentsScreen } from '../screens/CommentsScreen'; 
-import { ChallengeDetailsScreen } from '../screens/ChallengeDetailsScreen';
 import { FollowersScreen, FollowingScreen } from '../screens/FollowersScreen';
 
 import { colors } from '../theme/colors';
@@ -23,17 +23,19 @@ export type RootStackParamList = {
   Splash: undefined;
   Tabs: undefined;
   
+  // Stacks
   Profile: { userId?: string }; 
-  
   Comments: { post: Post }; 
-  
   Followers: { userId: string, title: string };
   Following: { userId: string, title: string };
   ChallengeDetails: { challengeId: string };
+
+  // Tab Shortcuts (Optional usage)
   HomeFeed: undefined;
   Challenges: undefined;
   CreatePost: undefined;
   Progress: undefined;
+  MyProfileTab: undefined; // Renamed to avoid collision
 };
 
 const Tab = createBottomTabNavigator<RootStackParamList>();
@@ -120,7 +122,7 @@ const TabsNavigator = () => (
       }}
     />
     <Tab.Screen
-      name="Profile"
+      name="MyProfileTab" // RENAMED HERE
       component={ProfileScreen}
       options={{
         title: 'My Profile',
@@ -134,7 +136,7 @@ const TabsNavigator = () => (
 
 export const AppNavigator = () => (
   <NavigationContainer>
-    <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false, headerTintColor: colors.text, }}>
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Tabs" component={TabsNavigator} />
       
@@ -162,6 +164,7 @@ export const AppNavigator = () => (
           headerTitleStyle: { fontWeight: 'bold' }
         }}
       />
+      
       <Stack.Screen 
         name="ChallengeDetails" 
         component={ChallengeDetailsScreen} 
@@ -169,7 +172,7 @@ export const AppNavigator = () => (
           title: 'Challenge Status', 
           headerShown: true,
           headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text
+          headerTintColor: colors.text,
         }} 
       />
 
