@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import styles from './ProgressScreenStyles';
 import { colors } from '../theme/colors';
 import { StepCounter } from '../components/StepCounter';
@@ -62,10 +62,19 @@ export const ProgressScreen = () => {
       const data: LeaderboardEntry[] = await api.get('/leaderboard');
       setLeaderboard(data);
 
-      // 3. Find Rank
+      // 3. Find Rank & Sync Data
       if (userId) {
         const myEntry = data.find(entry => entry.user.id === userId);
         setUserRank(myEntry ? `#${myEntry.rank}` : '> 10');
+
+        if (myEntry && myEntry.score > stats.steps) {
+            setStats(prev => ({
+                ...prev,
+                steps: myEntry.score,
+                calories: prev.calories === 0 ? Math.floor(myEntry.score * 0.04) : prev.calories, 
+                distance: prev.distance === 0 ? parseFloat((myEntry.score * 0.0008).toFixed(2)) : prev.distance
+            }));
+        }
       }
     } catch (e) {
       console.error('Failed to fetch data', e);
@@ -76,7 +85,7 @@ export const ProgressScreen = () => {
     setRefreshing(true);
     await fetchData();
     setRefreshing(false);
-  }, []);
+  }, [stats.steps]); // Add stats.steps dependency to ensure we compare against latest
 
   useEffect(() => {
     fetchData();
@@ -84,13 +93,19 @@ export const ProgressScreen = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Logic: Updates local step stats */}
+      {/* Logic: Updates local step stats from Pedometer */}
       <StepCounter 
-        onDataUpdate={(data) => setStats({ 
-          steps: data.currentSteps, 
-          calories: data.calories, 
-          distance: data.distance 
-        })} 
+        onDataUpdate={(data) => {
+            // Only update if the sensor reports MORE than what we already have
+            // This prevents the sensor from overwriting the server data with "0" on startup
+            if (data.currentSteps >= stats.steps) {
+                setStats({ 
+                    steps: data.currentSteps, 
+                    calories: data.calories, 
+                    distance: data.distance 
+                });
+            }
+        }} 
       />
 
       <View style={styles.header}>
