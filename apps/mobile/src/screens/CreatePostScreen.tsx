@@ -23,11 +23,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 type CreateScreenProp = NativeStackNavigationProp<RootStackParamList, 'CreatePost'>;
 
-const POST_TYPES: { label: string, value: PostType }[] = [
-  { label: "Workout", value: PostType.WORKOUT },
-  { label: "Progress", value: PostType.PROGRESS_PHOTO },
-  { label: "Milestone", value: PostType.MILESTONE },
-  { label: "Motivation", value: PostType.MOTIVATION },
+// Enhanced Options with Icons
+const POST_TYPES = [
+  { label: "Workout", value: PostType.WORKOUT, icon: "barbell" },
+  { label: "Progress", value: PostType.PROGRESS_PHOTO, icon: "camera" },
+  { label: "Milestone", value: PostType.MILESTONE, icon: "trophy" },
+  { label: "Motivation", value: PostType.MOTIVATION, icon: "flame" },
 ];
 
 const CHALLENGE_DURATIONS = [
@@ -89,8 +90,7 @@ export function CreatePostScreen() {
         const endDate = new Date();
         endDate.setDate(startDate.getDate() + duration);
 
-        // 1. Create the Challenge
-        const newChallenge = await api.post('/challenges', {
+        await api.post('/challenges', {
           title: challengeTitle,
           description: challengeDesc,
           startDate: startDate.toISOString(),
@@ -100,8 +100,7 @@ export function CreatePostScreen() {
           goalValue: parseInt(targetValue, 10),
         });
 
-        // 2. AUTO-POST to Home Feed (Discovery Mechanism)
-        // We create a post announcing this challenge
+        // Auto-Post to Feed
         await api.post('/posts', {
           caption: `I just launched a new challenge: "${challengeTitle}"! ⚔️\n\nGoal: ${parseInt(targetValue).toLocaleString()} ${targetMetric.toLowerCase()} in ${duration} days.\n\nGo to the Challenges tab to join me!`,
           postType: 'CHALLENGE_UPDATE',
@@ -131,32 +130,35 @@ export function CreatePostScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 20 }
+          { paddingBottom: insets.bottom + 20, paddingTop: insets.top + 10 }
         ]}
       >
+        {/* Header */}
         <View style={styles.headerRow}>
-          <Ionicons name="add-circle" size={28} color={colors.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.header}>Create</Text>
+          <Text style={styles.header}>Create New</Text>
         </View>
 
+        {/* Mode Toggle */}
         <View style={styles.toggleContainer}>
           <TouchableOpacity 
             style={[styles.toggleItem, mode === 'POST' && styles.toggleItemActive]} 
             onPress={() => setMode('POST')}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.toggleText, mode === 'POST' && styles.toggleTextActive]}>New Post</Text>
+            <Text style={[styles.toggleText, mode === 'POST' && styles.toggleTextActive]}>Post</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.toggleItem, mode === 'CHALLENGE' && styles.toggleItemActive]} 
             onPress={() => setMode('CHALLENGE')}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.toggleText, mode === 'CHALLENGE' && styles.toggleTextActive]}>New Challenge</Text>
+            <Text style={[styles.toggleText, mode === 'CHALLENGE' && styles.toggleTextActive]}>Challenge</Text>
           </TouchableOpacity>
         </View>
 
         {mode === 'POST' ? (
           <>
-            <Text style={styles.label}>Category</Text>
+            <Text style={styles.label}>Select Category</Text>
             <View style={styles.tabRow}>
               {POST_TYPES.map(type => (
                 <TouchableOpacity
@@ -164,6 +166,12 @@ export function CreatePostScreen() {
                   onPress={() => setPostType(type.value)}
                   style={[styles.tab, postType === type.value && styles.tabSelected]}
                 >
+                  <Ionicons 
+                    name={type.icon as any} 
+                    size={16} 
+                    color={postType === type.value ? colors.primary : colors.textSecondary} 
+                    style={{ marginRight: 6 }}
+                  />
                   <Text style={postType === type.value ? styles.tabTextSelected : styles.tabText}>
                     {type.label}
                   </Text>
@@ -173,7 +181,7 @@ export function CreatePostScreen() {
 
             <Text style={styles.label}>Caption</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { height: 120, textAlignVertical: 'top' }]}
               placeholder="What did you achieve today?"
               placeholderTextColor={colors.textSecondary}
               value={caption}
@@ -220,8 +228,14 @@ export function CreatePostScreen() {
                   onPress={() => setTargetMetric(metric as 'STEPS' | 'CALORIES')}
                   style={[styles.tab, targetMetric === metric && styles.tabSelected]}
                 >
+                  <Ionicons 
+                    name={metric === 'STEPS' ? 'footsteps' : 'flame'} 
+                    size={16} 
+                    color={targetMetric === metric ? colors.primary : colors.textSecondary} 
+                    style={{ marginRight: 6 }}
+                  />
                   <Text style={targetMetric === metric ? styles.tabTextSelected : styles.tabText}>
-                    {metric === 'STEPS' ? '👣 Steps' : '🔥 Calories'}
+                    {metric === 'STEPS' ? 'Steps' : 'Calories'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -258,6 +272,7 @@ export function CreatePostScreen() {
           style={styles.shareButton}
           onPress={handleCreate}
           disabled={loading}
+          activeOpacity={0.8}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
