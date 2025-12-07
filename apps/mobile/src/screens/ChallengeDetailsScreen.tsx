@@ -101,12 +101,14 @@ export const ChallengeDetailsScreen = () => {
         
         <View style={styles.groupStatsCard}>
           <Text style={styles.groupLabel}>TEAM PROGRESS</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
-            <Text style={[styles.bigNumber, { color: themeColor }]}>
-              {currentTotal.toLocaleString()}
-            </Text>
-            <Text style={styles.goalNumber}> / {goalValue.toLocaleString()}</Text>
-          </View>
+          <Text style={{ marginBottom: 8 }}>
+          <Text style={[styles.bigNumber, { color: themeColor }]}>
+            {currentTotal.toLocaleString()} 
+          </Text>
+          <Text style={styles.goalNumber}>
+            {' '}/ {goalValue.toLocaleString()}
+          </Text>
+        </Text>
           
           <ProgressBar current={currentTotal} target={goalValue} color={themeColor} />
           
