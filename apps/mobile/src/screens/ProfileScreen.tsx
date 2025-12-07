@@ -249,7 +249,18 @@ export function ProfileScreen() {
     );
   };
 
-  const renderPostItem = ({ item }: { item: Post }) => <PostCard post={item} />;
+const renderPostItem = ({ item }: { item: Post }) => {
+    const postWithAuthor = item.author ? item : {
+      ...item,
+      author: {
+        id: profile!.id,
+        username: profile!.username,
+        profilePicUrl: profile!.profilePicUrl
+      }
+    };
+
+    return <PostCard post={postWithAuthor} />;
+  };
   
   const renderGridItem = ({ item }: { item: Post }) => (
     <View style={styles.gridItemContainer}>
