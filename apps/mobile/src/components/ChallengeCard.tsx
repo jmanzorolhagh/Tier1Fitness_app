@@ -3,15 +3,17 @@ import { View, Text, Image, TouchableOpacity, Alert, ActivityIndicator } from 'r
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Challenge } from '@tier1fitness_app/types'; // Ensure this type is updated if you have strict typing!
+import { Challenge } from '@tier1fitness_app/types';
 import { styles } from './ChallengeCardStyles';
 import { colors } from '../theme/colors';
 import api from '../services/api';
 import { UserService } from '../services/userService';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
+const SUCCESS_COLOR = '#10B981';
+
 interface ChallengeCardProps {
-  challenge: Challenge & { currentProgress?: number }; // Extend type locally if needed
+  challenge: Challenge & { currentProgress?: number }; 
   onJoinSuccess?: () => void;
 }
 
@@ -67,26 +69,36 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
 
   // --- CALCULATION LOGIC ---
   const isSteps = challenge.goalType === 'STEPS';
-  const goalColor = isSteps ? colors.primary : colors.accent;
-  const goalIcon = isSteps ? 'footsteps' : 'flame';
+  const themeColor = isSteps ? colors.primary : colors.accent;
   
-  // Use the data from backend, default to 0 if missing
   const current = challenge.currentProgress || 0;
   const target = challenge.goalValue;
-  // Calculate percentage (capped at 100%)
-  const percentValue = Math.min((current / target) * 100, 100);
-  const percentDisplay = Math.round(percentValue);
+  
+  const rawPercent = (current / target) * 100;
+  const percentValue = Math.min(rawPercent, 100); // Cap Bar at 100%
+  const percentDisplay = Math.min(Math.round(rawPercent), 100); // Cap Text at 100%
+  const isCompleted = current >= target;
+
+  const activeColor = isCompleted ? SUCCESS_COLOR : themeColor;
+  const goalIcon = isSteps ? 'footsteps' : 'flame';
 
   return (
     <TouchableOpacity 
-      style={styles.card} 
+      style={[
+        styles.card,
+        isCompleted && { 
+            backgroundColor: activeColor + '15', // ~10% opacity
+            borderColor: activeColor,
+            borderWidth: 1
+        }
+      ]} 
       activeOpacity={0.9} 
       onPress={goToDetails}
     >
       {/* Header */}
       <View style={styles.header}>
-        <View style={[styles.iconBadge, { backgroundColor: goalColor + '20' }]}>
-          <Ionicons name={goalIcon as any} size={20} color={goalColor} />
+        <View style={[styles.iconBadge, { backgroundColor: activeColor + '20' }]}>
+          <Ionicons name={goalIcon as any} size={20} color={activeColor} />
         </View>
         <View style={styles.metaContainer}>
           <Text style={styles.title}>{challenge.title}</Text>
@@ -101,15 +113,23 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
         {challenge.description}
       </Text>
 
-      {/* --- NEW PROGRESS SECTION --- */}
       <View style={{ marginTop: 12, marginBottom: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>
             Team Progress
           </Text>
-          <Text style={{ color: goalColor, fontWeight: 'bold', fontSize: 12 }}>
-            {percentDisplay}%
-          </Text>
+          
+          {isCompleted ? (
+             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ color: activeColor, fontWeight: 'bold', fontSize: 12 }}>
+                   GOAL ACHIEVED! 🏆
+                </Text>
+             </View>
+          ) : (
+             <Text style={{ color: activeColor, fontWeight: 'bold', fontSize: 12 }}>
+                {percentDisplay}%
+             </Text>
+          )}
         </View>
         
         {/* Progress Bar Background */}
@@ -118,7 +138,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
           <View style={{ 
             width: `${percentValue}%`, 
             height: '100%', 
-            backgroundColor: goalColor,
+            backgroundColor: activeColor,
             borderRadius: 5 
           }} />
         </View>
@@ -129,7 +149,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
       </View>
 
       {/* Action Area */}
-      {!joined && (
+      {!joined && !isCompleted && (
         <TouchableOpacity 
           style={styles.joinButton} 
           onPress={handleJoin}
@@ -144,7 +164,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
       )}
 
       {/* Footer */}
-      <View style={[styles.footer, joined && { marginTop: 0 }]}>
+      <View style={[styles.footer, (joined || isCompleted) && { marginTop: 0 }]}>
         <View style={styles.creatorContainer}>
           <Image source={{ uri: challenge.creator.profilePicUrl }} style={styles.avatar} />
           <Text style={styles.creatorName}>Host: {challenge.creator.username}</Text>
