@@ -340,7 +340,34 @@ app.post('/api/healthdata', async (req: Request, res: Response) => {
     res.status(500).json({error: "An error occured saving health data."});
   }
 });
+app.get('/api/users/:userId/history', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    const history = await prisma.healthData.findMany({
+      where: {
+        userId: userId,
+        date: { gte: sevenDaysAgo }
+      },
+      orderBy: { date: 'asc' },
+      select: { date: true, dailySteps: true }
+    });
+
+    // Format for the chart (e.g., "Mon", "Tue")
+    const formatted = history.map(entry => ({
+      label: entry.date.toLocaleDateString('en-US', { weekday: 'short' }), 
+      steps: entry.dailySteps
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('History fetch failed:', error);
+    res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
 // 7. Get Leaderboard
 app.get('/api/leaderboard', async (req: Request, res: Response) => {
   try {
