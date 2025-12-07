@@ -5,15 +5,21 @@ import { Ionicons } from '@expo/vector-icons';
 import styles from './ProgressScreenStyles';
 import { colors } from '../theme/colors';
 import { StepCounter } from '../components/StepCounter';
+import { VictoryChart } from '../components/VictoryChart'; // <--- Import Chart
 import { UserService } from '../services/userService';
 import api from '../services/api';
 import { LeaderboardEntry } from '@tier1fitness_app/types';
 
-// --- SUB-COMPONENTS ---
+// Success Color (Emerald Green)
+const SUCCESS_COLOR = '#10B981';
 
 const StatCard = ({ icon, label, value, subValue, color, fullWidth = false }: any) => (
   <View style={[styles.statCard, fullWidth && styles.fullWidthCard]}>
-    <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
+    <View style={[
+      styles.iconContainer, 
+      { backgroundColor: color + '20' },
+      fullWidth && { marginBottom: 0, marginRight: 16 } 
+    ]}>
       <Ionicons name={icon} size={24} color={color} />
     </View>
     <View style={styles.statInfo}>
@@ -39,31 +45,34 @@ const LeaderboardRow = ({ entry, isMe }: { entry: LeaderboardEntry, isMe: boolea
   </View>
 );
 
-// --- MAIN SCREEN ---
-
 export const ProgressScreen = () => {
   const insets = useSafeAreaInsets();
   const [stats, setStats] = useState({ steps: 0, calories: 0, distance: 0 });
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [history, setHistory] = useState<{ label: string; steps: number }[]>([]); // <--- History State
   const [userRank, setUserRank] = useState<string>('-'); 
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
 
   const STEP_GOAL = 10000;
-  const progressPercent = Math.min(stats.steps / STEP_GOAL, 1) * 100;
+  
+  const rawPercent = (stats.steps / STEP_GOAL) * 100;
+  const progressPercent = Math.min(rawPercent, 100);
+  const displayPercent = Math.min(Math.round(rawPercent), 100);
+  
+  const isGoalMet = stats.steps >= STEP_GOAL;
+  const activeColor = isGoalMet ? SUCCESS_COLOR : colors.primary;
 
   const fetchData = async () => {
-    // 1. Get User
     let userId = (await UserService.getUser())?.id;
     if (userId) setCurrentUserId(userId);
 
     try {
-      // 2. Fetch Leaderboard
       const data: LeaderboardEntry[] = await api.get('/leaderboard');
       setLeaderboard(data);
 
-      // 3. Find Rank & Sync Data
       if (userId) {
+        // 1. Leaderboard Sync
         const myEntry = data.find(entry => entry.user.id === userId);
         setUserRank(myEntry ? `#${myEntry.rank}` : '> 10');
 
@@ -75,6 +84,10 @@ export const ProgressScreen = () => {
                 distance: prev.distance === 0 ? parseFloat((myEntry.score * 0.0008).toFixed(2)) : prev.distance
             }));
         }
+
+        // 2. Fetch History for Chart
+        const historyData = await api.get<any>(`/users/${userId}/history`);
+        setHistory(historyData);
       }
     } catch (e) {
       console.error('Failed to fetch data', e);
@@ -85,7 +98,7 @@ export const ProgressScreen = () => {
     setRefreshing(true);
     await fetchData();
     setRefreshing(false);
-  }, [stats.steps]); // Add stats.steps dependency to ensure we compare against latest
+  }, [stats.steps]);
 
   useEffect(() => {
     fetchData();
@@ -93,11 +106,8 @@ export const ProgressScreen = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Logic: Updates local step stats from Pedometer */}
       <StepCounter 
         onDataUpdate={(data) => {
-            // Only update if the sensor reports MORE than what we already have
-            // This prevents the sensor from overwriting the server data with "0" on startup
             if (data.currentSteps >= stats.steps) {
                 setStats({ 
                     steps: data.currentSteps, 
@@ -116,22 +126,39 @@ export const ProgressScreen = () => {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary}/>}
       >
-        {/* --- PERSONAL GOAL --- */}
-        <View style={styles.goalCard}>
+        <View style={[
+          styles.goalCard, 
+          isGoalMet && { 
+            borderColor: activeColor, 
+            backgroundColor: activeColor + '15' 
+          }
+        ]}>
           <View style={styles.goalHeader}>
             <Text style={styles.goalTitle}>Daily Steps</Text>
-            <Text style={styles.goalPercent}>{Math.round(progressPercent)}%</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={[styles.goalPercent, { color: activeColor }]}>
+                {displayPercent}%
+              </Text>
+              {isGoalMet && <Ionicons name="checkmark-circle" size={18} color={activeColor} style={{marginLeft: 4}} />}
+            </View>
           </View>
+          
           <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+            <View style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: activeColor }]} />
           </View>
+          
           <View style={styles.goalStats}>
-            <Text style={styles.currentSteps}>{stats.steps.toLocaleString()}</Text>
-            <Text style={styles.totalGoal}>/ {STEP_GOAL.toLocaleString()}</Text>
+            <Text>
+                <Text style={styles.currentSteps}>{stats.steps.toLocaleString()}</Text>
+                <Text style={styles.totalGoal}> / {STEP_GOAL.toLocaleString()}</Text>
+            </Text>
           </View>
+
+          {/* CHART: Always visible, color changes on success */}
+          <VictoryChart data={history} color={activeColor} />
+
         </View>
 
-        {/* --- PERSONAL STATS GRID --- */}
         <View style={styles.gridContainer}>
           <StatCard icon="flame" label="Calories" value={stats.calories} subValue="kcal" color="#EF4444" />
           <StatCard icon="map" label="Distance" value={stats.distance} subValue="km" color="#10B981" />
@@ -142,7 +169,6 @@ export const ProgressScreen = () => {
           subValue="Global Leaderboard" color="#F59E0B" 
         />
 
-        {/* --- LEADERBOARD SECTION --- */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Top Movers Today</Text>
         </View>
@@ -162,7 +188,6 @@ export const ProgressScreen = () => {
             ))
           )}
         </View>
-
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>
