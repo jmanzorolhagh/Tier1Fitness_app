@@ -61,6 +61,35 @@ const api = {
       throw error;
     }
   },
+  // Add this method inside the 'const api = { ... }' object in src/services/api.ts
+
+  put: async <T>(endpoint: string, body: any): Promise<T> => {
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
+    console.log(`[API REQUEST] PUT ${fullUrl}`);
+
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.log(`[API ERROR] Status: ${response.status} | Body: ${text}`);
+        throw new Error(`Server returned ${response.status}: ${text}`);
+      }
+
+      const json = await response.json();
+      return json as T;
+
+    } catch (error) {
+      logAndThrowError(error);
+      throw error;
+    }
+  },
 };
 
 export default api;
