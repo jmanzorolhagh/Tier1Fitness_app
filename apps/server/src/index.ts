@@ -1,16 +1,12 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { PrismaClient, PostType as PrismaPostType } from '@prisma/client';
-
-// Shared types
+import { PrismaClient } from '@prisma/client';
 import { 
   User as ApiUser, 
   Post as ApiPost,
   PostType as ApiPostType,
   PublicUser as ApiPublicUser, 
   LeaderboardEntry as ApiLeaderboardEntry, 
-  HealthData as ApiHealthData,
-  UserProfile as ApiUserProfile,
 } from '@tier1fitness_app/types';
 
 const prisma = new PrismaClient();
@@ -19,20 +15,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Logger
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next(); 
 });
 
-// --- ROUTES ---
-
-// Health Check
 app.get('/api', (req: Request, res: Response) => {
   res.json({ message: 'Tier1Fitness API is running!' });
 });
 
-// 1. Login User (Simple Version)
 app.post('/api/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -67,7 +58,6 @@ app.post('/api/login', async (req: Request, res: Response) => {
   }
 });
 
-// 2. Create User (Sign Up)
 app.post('/api/users/create', async (req: Request, res: Response) => {
   try {
     const { email, username, password } = req.body;
@@ -109,107 +99,10 @@ app.post('/api/users/create', async (req: Request, res: Response) => {
   }
 });
 
-// 3. Get User Profile
-app.get('/api/users/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const requesterId = req.query.requesterId as string;
-
-    const userFromDb = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        posts: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
-        _count: { 
-          select: { followers: true, following: true }
-        }
-      }
-    });
-
-    if (!userFromDb) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    // --- BADGE CALCULATION LOGIC ---
-    const badges: any[] = [];
-
-    // 1. Socialite Badge (Has posted)
-    if (userFromDb.posts.length > 0) {
-      badges.push({ label: 'Socialite', icon: 'camera', color: '#8B5CF6' }); // Purple
-    }
-
-    // 2. Challenger Badge (Has joined a challenge)
-    const challengeCount = await prisma.challengeParticipant.count({ 
-      where: { userId: id } 
-    });
-    if (challengeCount > 0) {
-      badges.push({ label: 'Challenger', icon: 'trophy', color: '#F59E0B' }); // Gold
-    }
-
-    // 3. 10k Club (Has hit 10k steps at least once in history)
-    const hit10k = await prisma.healthData.findFirst({
-      where: { userId: id, dailySteps: { gte: 10000 } }
-    });
-    if (hit10k) {
-      badges.push({ label: '10k Club', icon: 'ribbon', color: '#10B981' }); // Emerald
-    }
-    // -------------------------------
-
-    // Check if requester is following this user
-    let isFollowing = false;
-    if (requesterId) {
-      const followRecord = await prisma.follow.findUnique({
-        where: {
-          followerId_followingId: { followerId: requesterId, followingId: id }
-        }
-      });
-      isFollowing = !!followRecord;
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const healthData = await prisma.healthData.findFirst({
-      where: {
-        userId: id,
-        date: { gte: today, lt: tomorrow }
-      }
-    });
-
-    const healthStatsToSend = {
-      dailySteps: healthData?.dailySteps || 0,
-      dailyCalories: healthData?.dailyCalories || 0,
-    };
-    
-    const profile = {
-      id: userFromDb.id,
-      username: userFromDb.username,
-      bio: userFromDb.bio || undefined,
-      profilePicUrl: userFromDb.profilePicUrl,
-      followerCount: userFromDb._count.followers,
-      followingCount: userFromDb._count.following,
-      posts: userFromDb.posts, // (Simplified for brevity)
-      healthStats: healthStatsToSend,
-      isFollowing,
-      badges // <--- NEW FIELD
-    };
-    
-    res.json(profile);
-    
-  } catch (error) {
-    console.error(`Failed to get user ${req.params.id}:`, error);
-    res.status(500).json({ error: 'An error occurred.' });
-  }
-});
 app.get('/api/users/search', async (req: Request, res: Response) => {
   try {
     const query = req.query.q as string;
     
-    // Don't search for empty or single letters to save DB load
     if (!query || query.length < 2) {
       return res.json([]);
     }
@@ -218,19 +111,18 @@ app.get('/api/users/search', async (req: Request, res: Response) => {
       where: {
         username: {
           contains: query,
-          mode: 'insensitive', // Allows 'john' to find 'JohnDoe'
+          mode: 'insensitive', 
         },
       },
-      take: 20, // Limit results
+      take: 20, 
       select: {
         id: true,
         username: true,
         profilePicUrl: true,
-        // Optional: Include follower count if you want to show "Popularity"
         _count: { select: { followers: true } }
       },
       orderBy: {
-        followers: { _count: 'desc' } // Show most popular users first
+        followers: { _count: 'desc' } 
       }
     });
 
@@ -240,6 +132,39 @@ app.get('/api/users/search', async (req: Request, res: Response) => {
     res.status(500).json({ error: "Search failed" });
   }
 });
+
+app.post('/api/users/follow', async (req: Request, res: Response) => {
+  try {
+    const { followerId, followingId } = req.body;
+
+    if (followerId === followingId) {
+      return res.status(400).json({ error: "Cannot follow yourself" });
+    }
+
+    const existingFollow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: { followerId, followingId }
+      }
+    });
+
+    if (existingFollow) {
+      await prisma.follow.delete({
+        where: { followerId_followingId: { followerId, followingId } }
+      });
+    } else {
+      await prisma.follow.create({
+        data: { followerId, followingId }
+      });
+    }
+
+    res.json({ isFollowing: !existingFollow });
+
+  } catch (error) {
+    console.error('Failed to toggle follow:', error);
+    res.status(500).json({ error: "Failed to follow user" });
+  }
+});
+
 app.get('/api/users/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -251,7 +176,6 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
         posts: {
           orderBy: { createdAt: 'desc' },
           take: 10,
-          // We need counts for the PostCard to work properly
           include: {
             _count: { select: { likes: true, comments: true } },
             likes: requesterId ? { where: { userId: requesterId } } : false
@@ -267,7 +191,6 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    // 1. Calculate Badges (Keep existing logic)
     const badges: any[] = [];
     if (userFromDb.posts.length > 0) badges.push({ label: 'Socialite', icon: 'camera', color: '#8B5CF6' });
     
@@ -277,8 +200,6 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
     const hit10k = await prisma.healthData.findFirst({ where: { userId: id, dailySteps: { gte: 10000 } } });
     if (hit10k) badges.push({ label: '10k Club', icon: 'ribbon', color: '#10B981' });
 
-    // 2. Prepare Posts (CRITICAL FIX HERE)
-    // We must map over the raw posts and attach the 'author' object
     const postsToSend = userFromDb.posts.map(post => {
         const isLiked = post.likes ? post.likes.length > 0 : false;
         
@@ -288,7 +209,6 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
             imageUrl: post.imageUrl || undefined,
             postType: post.postType,
             createdAt: post.createdAt.toISOString(),
-            // MANUALLY ATTACH AUTHOR (This fixes the crash)
             author: {
                 id: userFromDb.id,
                 username: userFromDb.username,
@@ -300,7 +220,6 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
         };
     });
 
-    // 3. Follow Status
     let isFollowing = false;
     if (requesterId) {
       const followRecord = await prisma.follow.findUnique({
@@ -309,7 +228,6 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
       isFollowing = !!followRecord;
     }
 
-    // 4. Health Stats
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -324,7 +242,6 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
       dailyCalories: healthData?.dailyCalories || 0,
     };
     
-    // 5. Final Response
     const profile = {
       id: userFromDb.id,
       username: userFromDb.username,
@@ -332,7 +249,7 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
       profilePicUrl: userFromDb.profilePicUrl,
       followerCount: userFromDb._count.followers,
       followingCount: userFromDb._count.following,
-      posts: postsToSend, // <--- Use the processed posts array
+      posts: postsToSend, 
       healthStats: healthStatsToSend,
       isFollowing,
       badges
@@ -345,10 +262,75 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'An error occurred.' });
   }
 });
-// 4. Get All Posts
+
+app.get('/api/users/:userId/history', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const history = await prisma.healthData.findMany({
+      where: {
+        userId: userId,
+        date: { gte: sevenDaysAgo }
+      },
+      orderBy: { date: 'asc' },
+      select: { date: true, dailySteps: true }
+    });
+
+    const formatted = history.map(entry => ({
+      label: entry.date.toLocaleDateString('en-US', { weekday: 'short' }), 
+      steps: entry.dailySteps
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('History fetch failed:', error);
+    res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
+
+app.get('/api/users/:userId/followers', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const followers = await prisma.follow.findMany({
+      where: { followingId: userId },
+      select: {
+        follower: {
+          select: { id: true, username: true, profilePicUrl: true }
+        }
+      }
+    });
+
+    const followerList = followers.map(f => f.follower);
+    res.json(followerList);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retrieve followers' });
+  }
+});
+
+app.get('/api/users/:userId/following', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const following = await prisma.follow.findMany({
+      where: { followerId: userId },
+      select: {
+        following: {
+          select: { id: true, username: true, profilePicUrl: true }
+        }
+      }
+    });
+
+    const followingList = following.map(f => f.following);
+    res.json(followingList);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retrieve following list' });
+  }
+});
+
 app.get('/api/posts', async (req: Request, res: Response) => {
   try {
-    // Get the user asking for the posts (optional)
     const currentUserId = req.query.userId as string;
 
     const postsFromDb = await prisma.post.findMany({
@@ -356,7 +338,6 @@ app.get('/api/posts', async (req: Request, res: Response) => {
       include: {
         author: true, 
         _count: { select: { likes: true, comments: true } },
-        // KEY CHANGE: Fetch likes ONLY for this specific user
         likes: currentUserId ? {
           where: { userId: currentUserId }
         } : false
@@ -370,8 +351,6 @@ app.get('/api/posts', async (req: Request, res: Response) => {
         profilePicUrl: post.author.profilePicUrl
       };
 
-      // Check if the 'likes' array has any entries.
-      // If yes, it means THIS user liked THIS post.
       const userHasLiked = post.likes ? post.likes.length > 0 : false;
 
       return {
@@ -394,7 +373,6 @@ app.get('/api/posts', async (req: Request, res: Response) => {
   }
 });
 
-// 5. Create Post
 app.post('/api/posts', async (req: Request, res: Response) => {
   try {
     const { caption, imageUrl, postType, userId } = req.body;
@@ -441,292 +419,6 @@ app.post('/api/posts', async (req: Request, res: Response) => {
   }
 });
 
-// 6. Submit Health Data
-app.post('/api/healthdata', async (req: Request, res: Response) => {
-  try {
-    const { userId, steps, calories } = req.body;
-    if (!userId) return res.status(400).json({ error: 'userId is required.' });
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const healthData = await prisma.healthData.upsert({
-      where: { userId_date: { userId: userId, date: today } },
-      update: { dailySteps: steps, dailyCalories: calories },
-      create: {
-        userId: userId,
-        date: today,
-        dailySteps: steps || 0,
-        dailyCalories: calories || 0,
-        totalWorkouts: 0 
-      }
-    });
-
-    res.json(healthData);
-  } catch (error) {
-    console.error('Failed to save health data:', error);
-    res.status(500).json({error: "An error occured saving health data."});
-  }
-});
-app.get('/api/users/:userId/history', async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
-    
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const history = await prisma.healthData.findMany({
-      where: {
-        userId: userId,
-        date: { gte: sevenDaysAgo }
-      },
-      orderBy: { date: 'asc' },
-      select: { date: true, dailySteps: true }
-    });
-
-    // Format for the chart (e.g., "Mon", "Tue")
-    const formatted = history.map(entry => ({
-      label: entry.date.toLocaleDateString('en-US', { weekday: 'short' }), 
-      steps: entry.dailySteps
-    }));
-
-    res.json(formatted);
-  } catch (error) {
-    console.error('History fetch failed:', error);
-    res.status(500).json({ error: "Failed to fetch history" });
-  }
-});
-// 7. Get Leaderboard
-app.get('/api/leaderboard', async (req: Request, res: Response) => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const healthDataEntries = await prisma.healthData.findMany({
-      where: { date: { gte: today, lt: tomorrow } },
-      orderBy: { dailySteps: 'desc' },
-      take: 10,
-      include: { user: true } 
-    });
-
-    const leaderboard: ApiLeaderboardEntry[] = healthDataEntries.map((entry, index) => {
-      const publicUser: ApiPublicUser = {
-        id: entry.user.id,
-        username: entry.user.username,
-        profilePicUrl: entry.user.profilePicUrl
-      };
-      
-      return {
-        rank: index + 1,
-        user: publicUser,
-        score: entry.dailySteps,
-      };
-    });
-    
-    res.json(leaderboard);
-  } catch (error) {
-    console.error('Failed to get leaderboard:', error);
-    res.status(500).json({error: "An error occured getting the leaderboard."});
-  }
-});
-
-// --- 8. CHALLENGES (UPDATED) ---
-
-// Get Active Challenges (List View) - Now with Progress!
-app.get('/api/challenges', async (req: Request, res: Response) => {
-  try {
-    const challenges = await prisma.challenge.findMany({
-      where: { isPublic: true },
-      include: {
-        creator: true,
-        participants: true,
-      },
-      orderBy: { startDate: 'desc' }
-    });
-
-    // We need to calculate progress for EACH challenge in the list
-    const challengesWithProgress = await Promise.all(challenges.map(async (c) => {
-      // 1. Sum up all health data for participants within the challenge dates
-      const aggregate = await prisma.healthData.aggregate({
-        _sum: {
-          dailySteps: true,
-          dailyCalories: true
-        },
-        where: {
-          userId: { in: c.participants.map(p => p.userId) }, // Filter by participants
-          date: { gte: c.startDate, lte: c.endDate }         // Filter by date range
-        }
-      });
-
-      // 2. Determine the current value based on the goal type
-      const currentSteps = aggregate._sum.dailySteps || 0;
-      const currentCalories = aggregate._sum.dailyCalories || 0;
-      
-      return {
-        id: c.id,
-        title: c.title,
-        description: c.description,
-        startDate: c.startDate.toISOString(),
-        endDate: c.endDate.toISOString(),
-        participantCount: c.participants.length,
-        participantIds: c.participants.map(p => p.userId),
-        goalType: c.goalType,
-        goalValue: c.goalValue,
-        // NEW FIELD: The actual progress number
-        currentProgress: c.goalType === 'STEPS' ? currentSteps : currentCalories,
-        creator: {
-          id: c.creator.id,
-          username: c.creator.username,
-          profilePicUrl: c.creator.profilePicUrl
-        }
-      };
-    }));
-
-    res.json(challengesWithProgress);
-  } catch (error) {
-    console.error('Failed to get challenges:', error);
-    res.status(500).json({ error: "Failed to fetch challenges" });
-  }
-});
-app.get('/api/challenges/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    // 1. Fetch Challenge Basic Info
-    const challenge = await prisma.challenge.findUnique({
-      where: { id },
-      include: { creator: true }
-    });
-
-    if (!challenge) return res.status(404).json({ error: "Challenge not found" });
-
-    // 2. Fetch All Participants
-    const participants = await prisma.challengeParticipant.findMany({
-      where: { challengeId: id },
-      include: { 
-        user: { 
-          select: { id: true, username: true, profilePicUrl: true } 
-        } 
-      }
-    });
-
-    // 3. AGGREGATE STATS: Calculate total steps/calories for each user within challenge dates
-    // We map over participants and run an aggregation query for each.
-    const leaderboardWithStats = await Promise.all(participants.map(async (p) => {
-      const stats = await prisma.healthData.aggregate({
-        _sum: {
-          dailySteps: true,
-          dailyCalories: true
-        },
-        where: {
-          userId: p.userId,
-          // STRICT FILTER: Only count data logged AFTER challenge start and BEFORE end
-          date: {
-            gte: challenge.startDate,
-            lte: challenge.endDate
-          }
-        }
-      });
-
-      return {
-        userId: p.userId,
-        username: p.user.username,
-        profilePicUrl: p.user.profilePicUrl,
-        // Default to 0 if no data found
-        totalSteps: stats._sum.dailySteps || 0,
-        totalCalories: stats._sum.dailyCalories || 0,
-      };
-    }));
-
-    // 4. Calculate Group Totals (Collaborative Logic)
-    const groupTotalSteps = leaderboardWithStats.reduce((sum, p) => sum + p.totalSteps, 0);
-    const groupTotalCalories = leaderboardWithStats.reduce((sum, p) => sum + p.totalCalories, 0);
-
-    // 5. Return combined data
-    res.json({
-      ...challenge,
-      participants: leaderboardWithStats.sort((a, b) => {
-        // Sort by the challenge's specific goal type
-        if (challenge.goalType === 'CALORIES') return b.totalCalories - a.totalCalories;
-        return b.totalSteps - a.totalSteps;
-      }),
-      groupProgress: {
-        steps: groupTotalSteps,
-        calories: groupTotalCalories
-      }
-    });
-
-  } catch (error) {
-    console.error('Failed to get challenge details:', error);
-    res.status(500).json({ error: "Failed to fetch challenge details" });
-  }
-});
-// Create Challenge
-app.post('/api/challenges', async (req: Request, res: Response) => {
-  try {
-    const { title, description, startDate, endDate, creatorId, goalType, goalValue } = req.body;
-
-    if (!title || !creatorId) {
-      return res.status(400).json({ error: "Title and Creator ID required" });
-    }
-
-    const newChallenge = await prisma.challenge.create({
-      data: {
-        title,
-        description: description || "",
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        creatorId,
-        isPublic: true,
-        // --- NEW FIELDS SAVED ---
-        goalType: goalType || "STEPS",
-        goalValue: goalValue || 10000,
-        // -------------------------
-      }
-    });
-
-    // Auto-join the creator
-    await prisma.challengeParticipant.create({
-      data: {
-        userId: creatorId,
-        challengeId: newChallenge.id
-      }
-    });
-
-    console.log(`Challenge created: ${title}`);
-    res.status(201).json(newChallenge);
-  } catch (error) {
-    console.error('Failed to create challenge:', error);
-    res.status(500).json({ error: "Failed to create challenge" });
-  }
-});
-
-app.post('/api/challenges/join', async (req: Request, res: Response) => {
-  try {
-    const { userId, challengeId } = req.body;
-
-    const existing = await prisma.challengeParticipant.findUnique({
-      where: {
-        userId_challengeId: { userId, challengeId }
-      }
-    });
-
-    if (existing) {
-      return res.status(400).json({ error: "Already joined this challenge" });
-    }
-
-    await prisma.challengeParticipant.create({
-      data: { userId, challengeId }
-    });
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Failed to join challenge:', error);
-    res.status(500).json({ error: "Failed to join" });
-  }
-});
 app.post('/api/posts/like', async (req: Request, res: Response) => {
   try {
     const { userId, postId } = req.body;
@@ -763,6 +455,7 @@ app.post('/api/posts/like', async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to like post" });
   }
 });
+
 app.get('/api/posts/:postId/comments', async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
@@ -836,75 +529,246 @@ app.post('/api/posts/:postId/comments', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to create comment' });
   }
 });
-app.post('/api/users/follow', async (req: Request, res: Response) => {
-  try {
-    const { followerId, followingId } = req.body;
 
-    if (followerId === followingId) {
-      return res.status(400).json({ error: "Cannot follow yourself" });
+app.post('/api/healthdata', async (req: Request, res: Response) => {
+  try {
+    const { userId, steps, calories } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId is required.' });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const healthData = await prisma.healthData.upsert({
+      where: { userId_date: { userId: userId, date: today } },
+      update: { dailySteps: steps, dailyCalories: calories },
+      create: {
+        userId: userId,
+        date: today,
+        dailySteps: steps || 0,
+        dailyCalories: calories || 0,
+        totalWorkouts: 0 
+      }
+    });
+
+    res.json(healthData);
+  } catch (error) {
+    console.error('Failed to save health data:', error);
+    res.status(500).json({error: "An error occured saving health data."});
+  }
+});
+
+app.get('/api/leaderboard', async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const healthDataEntries = await prisma.healthData.findMany({
+      where: { date: { gte: today, lt: tomorrow } },
+      orderBy: { dailySteps: 'desc' },
+      take: 10,
+      include: { user: true } 
+    });
+
+    const leaderboard: ApiLeaderboardEntry[] = healthDataEntries.map((entry, index) => {
+      const publicUser: ApiPublicUser = {
+        id: entry.user.id,
+        username: entry.user.username,
+        profilePicUrl: entry.user.profilePicUrl
+      };
+      
+      return {
+        rank: index + 1,
+        user: publicUser,
+        score: entry.dailySteps,
+      };
+    });
+    
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('Failed to get leaderboard:', error);
+    res.status(500).json({error: "An error occured getting the leaderboard."});
+  }
+});
+
+app.get('/api/challenges', async (req: Request, res: Response) => {
+  try {
+    const challenges = await prisma.challenge.findMany({
+      where: { isPublic: true },
+      include: {
+        creator: true,
+        participants: true,
+      },
+      orderBy: { startDate: 'desc' }
+    });
+
+    const challengesWithProgress = await Promise.all(challenges.map(async (c) => {
+      const aggregate = await prisma.healthData.aggregate({
+        _sum: {
+          dailySteps: true,
+          dailyCalories: true
+        },
+        where: {
+          userId: { in: c.participants.map(p => p.userId) }, 
+          date: { gte: c.startDate, lte: c.endDate }        
+        }
+      });
+
+      const currentSteps = aggregate._sum.dailySteps || 0;
+      const currentCalories = aggregate._sum.dailyCalories || 0;
+      
+      return {
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        startDate: c.startDate.toISOString(),
+        endDate: c.endDate.toISOString(),
+        participantCount: c.participants.length,
+        participantIds: c.participants.map(p => p.userId),
+        goalType: c.goalType,
+        goalValue: c.goalValue,
+        currentProgress: c.goalType === 'STEPS' ? currentSteps : currentCalories,
+        creator: {
+          id: c.creator.id,
+          username: c.creator.username,
+          profilePicUrl: c.creator.profilePicUrl
+        }
+      };
+    }));
+
+    res.json(challengesWithProgress);
+  } catch (error) {
+    console.error('Failed to get challenges:', error);
+    res.status(500).json({ error: "Failed to fetch challenges" });
+  }
+});
+
+app.post('/api/challenges', async (req: Request, res: Response) => {
+  try {
+    const { title, description, startDate, endDate, creatorId, goalType, goalValue } = req.body;
+
+    if (!title || !creatorId) {
+      return res.status(400).json({ error: "Title and Creator ID required" });
     }
 
-    const existingFollow = await prisma.follow.findUnique({
+    const newChallenge = await prisma.challenge.create({
+      data: {
+        title,
+        description: description || "",
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        creatorId,
+        isPublic: true,
+        goalType: goalType || "STEPS",
+        goalValue: goalValue || 10000,
+      }
+    });
+
+    await prisma.challengeParticipant.create({
+      data: {
+        userId: creatorId,
+        challengeId: newChallenge.id
+      }
+    });
+
+    console.log(`Challenge created: ${title}`);
+    res.status(201).json(newChallenge);
+  } catch (error) {
+    console.error('Failed to create challenge:', error);
+    res.status(500).json({ error: "Failed to create challenge" });
+  }
+});
+
+app.post('/api/challenges/join', async (req: Request, res: Response) => {
+  try {
+    const { userId, challengeId } = req.body;
+
+    const existing = await prisma.challengeParticipant.findUnique({
       where: {
-        followerId_followingId: { followerId, followingId }
+        userId_challengeId: { userId, challengeId }
       }
     });
 
-    if (existingFollow) {
-      await prisma.follow.delete({
-        where: { followerId_followingId: { followerId, followingId } }
-      });
-    } else {
-      await prisma.follow.create({
-        data: { followerId, followingId }
-      });
+    if (existing) {
+      return res.status(400).json({ error: "Already joined this challenge" });
     }
 
-    res.json({ isFollowing: !existingFollow });
+    await prisma.challengeParticipant.create({
+      data: { userId, challengeId }
+    });
 
+    res.json({ success: true });
   } catch (error) {
-    console.error('Failed to toggle follow:', error);
-    res.status(500).json({ error: "Failed to follow user" });
+    console.error('Failed to join challenge:', error);
+    res.status(500).json({ error: "Failed to join" });
   }
 });
-app.get('/api/users/:userId/followers', async (req: Request, res: Response) => {
+
+app.get('/api/challenges/:id', async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
-    const followers = await prisma.follow.findMany({
-      where: { followingId: userId },
-      select: {
-        follower: {
-          select: { id: true, username: true, profilePicUrl: true }
-        }
+    const { id } = req.params;
+
+    const challenge = await prisma.challenge.findUnique({
+      where: { id },
+      include: { creator: true }
+    });
+
+    if (!challenge) return res.status(404).json({ error: "Challenge not found" });
+
+    const participants = await prisma.challengeParticipant.findMany({
+      where: { challengeId: id },
+      include: { 
+        user: { 
+          select: { id: true, username: true, profilePicUrl: true } 
+        } 
       }
     });
 
-    const followerList = followers.map(f => f.follower);
-    res.json(followerList);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to retrieve followers' });
-  }
-});
-
-app.get('/api/users/:userId/following', async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
-    const following = await prisma.follow.findMany({
-      where: { followerId: userId },
-      select: {
-        following: {
-          select: { id: true, username: true, profilePicUrl: true }
+    const leaderboardWithStats = await Promise.all(participants.map(async (p) => {
+      const stats = await prisma.healthData.aggregate({
+        _sum: {
+          dailySteps: true,
+          dailyCalories: true
+        },
+        where: {
+          userId: p.userId,
+          date: {
+            gte: challenge.startDate,
+            lte: challenge.endDate
+          }
         }
+      });
+
+      return {
+        userId: p.userId,
+        username: p.user.username,
+        profilePicUrl: p.user.profilePicUrl,
+        totalSteps: stats._sum.dailySteps || 0,
+        totalCalories: stats._sum.dailyCalories || 0,
+      };
+    }));
+
+    const groupTotalSteps = leaderboardWithStats.reduce((sum, p) => sum + p.totalSteps, 0);
+    const groupTotalCalories = leaderboardWithStats.reduce((sum, p) => sum + p.totalCalories, 0);
+
+    res.json({
+      ...challenge,
+      participants: leaderboardWithStats.sort((a, b) => {
+        if (challenge.goalType === 'CALORIES') return b.totalCalories - a.totalCalories;
+        return b.totalSteps - a.totalSteps;
+      }),
+      groupProgress: {
+        steps: groupTotalSteps,
+        calories: groupTotalCalories
       }
     });
 
-    const followingList = following.map(f => f.following);
-    res.json(followingList);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to retrieve following list' });
+    console.error('Failed to get challenge details:', error);
+    res.status(500).json({ error: "Failed to fetch challenge details" });
   }
 });
-
 
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
