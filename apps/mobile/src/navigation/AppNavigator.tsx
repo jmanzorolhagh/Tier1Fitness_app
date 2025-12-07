@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'; // <--- Import added here
 import { Ionicons } from '@expo/vector-icons';
 
 // Screens
@@ -11,10 +11,11 @@ import { CreatePostScreen } from '../screens/CreatePostScreen';
 import { SplashScreen } from '../screens/SplashScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
 import { ChallengeScreen } from '../screens/ChallengeScreen';
-import { ChallengeDetailsScreen } from '../screens/ChallengeDetailsScreen'; // Ensure this file exists
+import { ChallengeDetailsScreen } from '../screens/ChallengeDetailsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { CommentsScreen } from '../screens/CommentsScreen'; 
 import { FollowersScreen, FollowingScreen } from '../screens/FollowersScreen';
+import { SearchScreen } from '../screens/SearchScreen'; // <--- Import Search Screen
 
 import { colors } from '../theme/colors';
 import { Post } from '@tier1fitness_app/types';
@@ -29,13 +30,14 @@ export type RootStackParamList = {
   Followers: { userId: string, title: string };
   Following: { userId: string, title: string };
   ChallengeDetails: { challengeId: string };
+  Search: undefined; // <--- Add Search Route
 
-  // Tab Shortcuts (Optional usage)
+  // Tab Shortcuts
   HomeFeed: undefined;
   Challenges: undefined;
   CreatePost: undefined;
   Progress: undefined;
-  MyProfileTab: undefined; // Renamed to avoid collision
+  MyProfileTab: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootStackParamList>();
@@ -84,12 +86,21 @@ const TabsNavigator = () => (
     <Tab.Screen
       name="HomeFeed"
       component={HomeFeedScreen}
-      options={{
+      options={({ navigation }) => ({
         title: 'Tier1Fitness',
         tabBarIcon: ({ focused }) => (
           <TabBarIcon focused={focused} label="Home" iconName="home-outline" />
         ),
-      }}
+        // Search Button in Header
+        headerRight: () => (
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Search')}
+            style={{ marginRight: 15 }}
+          >
+            <Ionicons name="search" size={24} color={colors.text} />
+          </TouchableOpacity>
+        ),
+      })}
     />
     <Tab.Screen
       name="Challenges"
@@ -122,7 +133,7 @@ const TabsNavigator = () => (
       }}
     />
     <Tab.Screen
-      name="MyProfileTab" // RENAMED HERE
+      name="MyProfileTab"
       component={ProfileScreen}
       options={{
         title: 'My Profile',
@@ -136,7 +147,14 @@ const TabsNavigator = () => (
 
 export const AppNavigator = () => (
   <NavigationContainer>
-    <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false, headerTintColor: colors.text, }}>
+    <Stack.Navigator 
+      initialRouteName="Splash" 
+      screenOptions={{ 
+        headerShown: false,
+        
+        headerTintColor: colors.text,
+      }}
+    >
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Tabs" component={TabsNavigator} />
       
@@ -144,11 +162,10 @@ export const AppNavigator = () => (
         name="Profile" 
         component={ProfileScreen} 
         options={{ 
-          presentation: 'card', 
-          headerShown: true,     
+          headerShown: true,
+          title: 'Profile', 
           headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerTitle: '',       
+          headerShadowVisible: false,
         }} 
       />
 
@@ -160,8 +177,7 @@ export const AppNavigator = () => (
           headerShown: true,
           title: 'Comments',
           headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: 'bold' }
+          headerShadowVisible: false,
         }}
       />
       
@@ -169,14 +185,21 @@ export const AppNavigator = () => (
         name="ChallengeDetails" 
         component={ChallengeDetailsScreen} 
         options={{ 
-          title: 'Challenge Status', 
           headerShown: true,
+          title: 'Challenge',
           headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
+          headerShadowVisible: false,
         }} 
       />
 
-      {/* Follower Lists */}
+      <Stack.Screen 
+        name="Search" 
+        component={SearchScreen} 
+        options={{ headerShown: false, 
+          
+         }} 
+      />
+
       <Stack.Screen
         name="Followers"
         component={FollowersScreen}
@@ -184,8 +207,6 @@ export const AppNavigator = () => (
           title: route.params.title,
           headerShown: true,
           headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.text,
-          headerBackTitleVisible: false,
         })}
       />
       <Stack.Screen
@@ -195,8 +216,6 @@ export const AppNavigator = () => (
           title: route.params.title,
           headerShown: true,
           headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.text,
-          headerBackTitleVisible: false,
         })}
       />
 
