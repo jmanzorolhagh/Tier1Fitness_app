@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '../navigation/AppNavigator'; // Ensure correct import path
 import { UserProfile, Post } from '@tier1fitness_app/types';
 import api from '../services/api';
 import { colors } from '../theme/colors';
@@ -27,35 +26,35 @@ const POST_GRID_SIZE = (width - 6) / 3;
 
 const defaultProfilePic = 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff';
 
+// Extend type locally to include badges (since we just added it to backend)
+interface ExtendedProfile extends UserProfile {
+  badges?: { label: string; icon: string; color: string }[];
+}
+
 export function ProfileScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   
-  // If paramUserId is undefined, we assume it's "My Profile" tab
   const paramUserId = route.params?.userId;
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<ExtendedProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'grid'>('posts');
   const [isFollowing, setIsFollowing] = useState(false); 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Edit Mode State
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editBio, setEditBio] = useState('');
   const [editPic, setEditPic] = useState('');
 
   const loadData = useCallback(async () => {
-    // Only show full loader if not refreshing
     if (!refreshing) setLoading(true);
-    
     try {
       const user = await UserService.getUser();
       const myId = user?.id || null;
       setCurrentUserId(myId);
 
-      // Determine target: paramUserId (external) or myId (internal)
       const targetId = paramUserId || myId;
 
       if (!targetId) {
@@ -65,12 +64,11 @@ export function ProfileScreen() {
       }
 
       const endpoint = myId ? `/users/${targetId}?requesterId=${myId}` : `/users/${targetId}`;
-      const data = await api.get<UserProfile>(endpoint);
+      const data = await api.get<ExtendedProfile>(endpoint);
       
       setProfile(data);
       setIsFollowing(data.isFollowing || false);
 
-      // Pre-fill edit form if it's my profile
       if (data.id === myId) {
         setEditBio(data.bio || '');
         setEditPic(data.profilePicUrl || '');
@@ -97,47 +95,32 @@ export function ProfileScreen() {
 
   const handleUpdateProfile = async () => {
     if (!currentUserId) return;
-
     try {
-      // This calls the .put() method we just added to api.ts
       await api.put(`/users/${currentUserId}`, {
          bio: editBio,
          profilePicUrl: editPic
       });
-      
       setEditModalVisible(false);
-      onRefresh(); // Refresh the screen to show the new Bio/Pic
+      onRefresh(); 
       Alert.alert("Success", "Profile updated!");
-      
     } catch (e) {
-      console.error(e);
       Alert.alert("Error", "Failed to update profile.");
     }
   };
+
   const handleFollowToggle = async () => {
     if (!currentUserId || !profile) {
        Alert.alert('Login Required', 'You must be logged in to follow users.');
        return;
     }
-
     const newStatus = !isFollowing;
     setIsFollowing(newStatus);
-    
-    // Optimistic Update
-    setProfile(prev => prev ? ({
-      ...prev,
-      followerCount: prev.followerCount + (newStatus ? 1 : -1)
-    }) : null);
+    setProfile(prev => prev ? ({ ...prev, followerCount: prev.followerCount + (newStatus ? 1 : -1) }) : null);
 
     try {
-      await api.post('/users/follow', {
-        followerId: currentUserId,
-        followingId: profile.id
-      });
+      await api.post('/users/follow', { followerId: currentUserId, followingId: profile.id });
     } catch (error) {
-      console.error('Follow failed:', error);
-      setIsFollowing(!newStatus); // Revert
-      Alert.alert('Error', 'Failed to update follow status.');
+      setIsFollowing(!newStatus);
     }
   };
 
@@ -152,10 +135,7 @@ export function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await UserService.clearUser();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Splash' }],
-            });
+            navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
           }
         }
       ]
@@ -185,19 +165,31 @@ export function ProfileScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>{profile.posts.length}</Text>
-            <Text style={styles.statLabel}>Posts</Text>
+            <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Posts</Text>
           </View>
           <TouchableOpacity style={styles.statItem} onPress={goToFollowers}>
             <Text style={styles.statNumber}>{profile.followerCount}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
+            <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Followers</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.statItem} onPress={goToFollowing}>
             <Text style={styles.statNumber}>{profile.followingCount}</Text>
-            <Text style={styles.statLabel}>Following</Text>
+            <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Following</Text>
           </TouchableOpacity>
         </View>
 
         {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
+
+        {/* --- NEW: TROPHY CASE --- */}
+        {profile.badges && profile.badges.length > 0 && (
+          <View style={styles.trophyCase}>
+            {profile.badges.map((badge, index) => (
+              <View key={index} style={[styles.badgeItem, { borderColor: badge.color + '50', backgroundColor: badge.color + '15' }]}>
+                <Ionicons name={badge.icon as any} size={16} color={badge.color} style={{ marginRight: 6 }} />
+                <Text style={[styles.badgeText, { color: badge.color }]}>{badge.label}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {isOwnProfile ? (
           <View style={{ alignItems: 'center', width: '100%' }}>
@@ -289,7 +281,6 @@ export function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Edit Profile Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -299,7 +290,6 @@ export function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Profile</Text>
-            
             <Text style={styles.label}>Profile Picture URL</Text>
             <TextInput 
               style={styles.input} 
@@ -309,7 +299,6 @@ export function ProfileScreen() {
               placeholderTextColor="#666"
               autoCapitalize="none"
             />
-
             <Text style={styles.label}>Bio</Text>
             <TextInput 
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]} 
@@ -319,7 +308,6 @@ export function ProfileScreen() {
               placeholder="Tell us about yourself..."
               placeholderTextColor="#666"
             />
-
             <View style={styles.modalButtons}>
               <TouchableOpacity onPress={() => setEditModalVisible(false)} style={styles.cancelButton}>
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -332,7 +320,6 @@ export function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Main List */}
       {activeTab === 'posts' ? (
         <FlatList
           data={profile?.posts || []}
@@ -368,10 +355,53 @@ const styles = StyleSheet.create({
   profileImage: { width: 90, height: 90, borderRadius: 45, marginBottom: 12, borderWidth: 2, borderColor: colors.primary, backgroundColor: '#333' },
   username: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 12 },
   bio: { color: colors.textSecondary, textAlign: 'center', marginBottom: 15, paddingHorizontal: 30 },
-  statsContainer: { flexDirection: 'row', width: '100%', justifyContent: 'space-around', marginBottom: 20, paddingVertical: 10, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border },
-  statItem: { alignItems: 'center', paddingHorizontal: 0 },
+  
+  statsContainer: { 
+    flexDirection: 'row', 
+    width: '100%', 
+    justifyContent: 'space-between', 
+    marginBottom: 20, 
+    paddingVertical: 10, 
+    borderTopWidth: 1, 
+    borderBottomWidth: 1, 
+    borderColor: colors.border,
+    paddingHorizontal: 20 
+  },
+  statItem: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center'
+  },
   statNumber: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  statLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  statLabel: { 
+    fontSize: 12, 
+    color: colors.textSecondary, 
+    marginTop: 2, 
+    textAlign: 'center',
+    width: '100%' 
+  },
+
+  // --- NEW BADGE STYLES ---
+  trophyCase: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 15,
+    gap: 8, // Adds space between badges
+  },
+  badgeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+
   actionButton: { backgroundColor: colors.primary, paddingVertical: 10, paddingHorizontal: 40, borderRadius: 20, marginBottom: 10, minWidth: 150, alignItems: 'center' },
   editButton: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   unfollowButton: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.textSecondary },
@@ -389,7 +419,6 @@ const styles = StyleSheet.create({
   gridItemContainer: { width: POST_GRID_SIZE, height: POST_GRID_SIZE, backgroundColor: colors.surface, marginBottom: 2 },
   gridImage: { width: '100%', height: '100%' },
   
-  // Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
   modalContent: { backgroundColor: colors.surface, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 20, textAlign: 'center' },
