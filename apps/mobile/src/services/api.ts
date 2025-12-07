@@ -7,21 +7,21 @@ export const MY_DEMO_USER_ID = "cmhw533h40000v2pk92qrjsfe";
 const logAndThrowError = (error: unknown) => {
   const errorMessage = error instanceof Error ? error.message : String(error);
   
-  console.error(`[☠️ NETWORK FAIL]`, errorMessage);
+  console.error(`[ NETWORK FAIL]`, errorMessage);
   throw error;
 };
 
 const api = {
   get: async <T>(endpoint: string): Promise<T> => {
     const fullUrl = `${API_BASE_URL}${endpoint}`;
-    console.log(`[🚀 API REQUEST] GET ${fullUrl}`);
+    console.log(`[API REQUEST] GET ${fullUrl}`);
 
     try {
       const response = await fetch(fullUrl);
       
       if (!response.ok) {
         const text = await response.text();
-        console.log(`[❌ API ERROR] Status: ${response.status} | Body: ${text}`);
+        console.log(`[API ERROR] Status: ${response.status} | Body: ${text}`);
         throw new Error(`Server returned ${response.status}: ${text}`);
       }
 
@@ -36,7 +36,7 @@ const api = {
 
   post: async <T>(endpoint: string, body: any): Promise<T> => {
     const fullUrl = `${API_BASE_URL}${endpoint}`;
-    console.log(`[🚀 API REQUEST] POST ${fullUrl}`);
+    console.log(`[API REQUEST] POST ${fullUrl}`);
 
     try {
       const response = await fetch(fullUrl, {
@@ -49,7 +49,7 @@ const api = {
 
       if (!response.ok) {
         const text = await response.text();
-        console.log(`[❌ API ERROR] Status: ${response.status} | Body: ${text}`);
+        console.log(`[API ERROR] Status: ${response.status} | Body: ${text}`);
         throw new Error(`Server returned ${response.status}: ${text}`);
       }
 

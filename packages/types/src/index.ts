@@ -58,7 +58,7 @@ export interface UserProfile {
   bio?: string;
   joinedDate: string;
   profilePicUrl: string;
-
+  isFollowing?: boolean;
 
   followerCount: number;
   followingCount: number;
