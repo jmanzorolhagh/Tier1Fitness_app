@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, Alert, ScrollView } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  ActivityIndicator, 
+  Image, 
+  Alert, 
+  TouchableOpacity 
+} from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors } from '../theme/colors';
 import api from '../services/api';
-import { UserService } from '../services/userService';
+import { RootStackParamList } from '../navigation/AppNavigator';
 
 const ProgressBar = ({ current, target, color }: { current: number, target: number, color: string }) => {
   const percent = Math.min((current / target) * 100, 100);
@@ -17,7 +26,8 @@ const ProgressBar = ({ current, target, color }: { current: number, target: numb
 
 export const ChallengeDetailsScreen = () => {
   const route = useRoute<any>();
-  const navigation = useNavigation();
+  // Use specific type to ensure .push() is available
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { challengeId } = route.params;
 
   const [challengeData, setChallengeData] = useState<any>(null);
@@ -29,8 +39,7 @@ export const ChallengeDetailsScreen = () => {
 
   const fetchDetails = async () => {
     try {
-      // Hits the new endpoint we just created
-      const data = await api.get(`/challenges/${challengeId}`);
+      const data = await api.get<any>(`/challenges/${challengeId}`);
       setChallengeData(data);
     } catch (e) {
       Alert.alert("Error", "Could not load challenge details");
@@ -46,15 +55,25 @@ export const ChallengeDetailsScreen = () => {
 
   // --- Collaborative Logic ---
   const isSteps = challengeData.goalType === 'STEPS';
-  const goalValue = challengeData.goalValue; // e.g., 1,000,000
+  const goalValue = challengeData.goalValue;
   const currentTotal = isSteps ? challengeData.groupProgress.steps : challengeData.groupProgress.calories;
   const percentage = Math.round((currentTotal / goalValue) * 100);
   const themeColor = isSteps ? colors.primary : colors.accent;
 
   const renderParticipant = ({ item, index }: { item: any, index: number }) => {
     const score = isSteps ? item.totalSteps : item.totalCalories;
+
+    // --- NEW: Navigation Logic ---
+    const goToProfile = () => {
+      navigation.push('Profile', { userId: item.userId });
+    };
+
     return (
-      <View style={styles.row}>
+      <TouchableOpacity 
+        style={styles.row} 
+        onPress={goToProfile}
+        activeOpacity={0.7}
+      >
         <Text style={styles.rank}>#{index + 1}</Text>
         <Image source={{ uri: item.profilePicUrl }} style={styles.avatar} />
         <View style={{ flex: 1 }}>
@@ -64,7 +83,12 @@ export const ChallengeDetailsScreen = () => {
         <Text style={[styles.score, { color: themeColor }]}>
           {score.toLocaleString()} {isSteps ? 'steps' : 'kcal'}
         </Text>
-      </View>
+        {/* Little chevron to hint interactivity */}
+        <View style={{ marginLeft: 8 }}>
+            {/* You can import Ionicons here if you want a visual cue, 
+                but the touch opacity is usually enough */}
+        </View>
+      </TouchableOpacity>
     );
   };
 
