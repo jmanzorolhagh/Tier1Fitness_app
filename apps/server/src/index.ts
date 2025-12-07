@@ -205,6 +205,41 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'An error occurred.' });
   }
 });
+app.get('/api/users/search', async (req: Request, res: Response) => {
+  try {
+    const query = req.query.q as string;
+    
+    // Don't search for empty or single letters to save DB load
+    if (!query || query.length < 2) {
+      return res.json([]);
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        username: {
+          contains: query,
+          mode: 'insensitive', // Allows 'john' to find 'JohnDoe'
+        },
+      },
+      take: 20, // Limit results
+      select: {
+        id: true,
+        username: true,
+        profilePicUrl: true,
+        // Optional: Include follower count if you want to show "Popularity"
+        _count: { select: { followers: true } }
+      },
+      orderBy: {
+        followers: { _count: 'desc' } // Show most popular users first
+      }
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('Search failed:', error);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
 app.get('/api/users/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
