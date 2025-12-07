@@ -193,7 +193,30 @@ app.get('/api/users/:id', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'An error occurred while retrieving the user profile.' });
   }
 });
+app.put('/api/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { bio, profilePicUrl } = req.body;
 
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { 
+        bio, 
+        profilePicUrl 
+      }
+    });
+
+    res.json({ 
+      id: updatedUser.id,
+      username: updatedUser.username,
+      bio: updatedUser.bio,
+      profilePicUrl: updatedUser.profilePicUrl 
+    });
+  } catch (error) {
+    console.error('Update failed:', error);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
 // 4. Get All Posts
 app.get('/api/posts', async (req: Request, res: Response) => {
   try {
