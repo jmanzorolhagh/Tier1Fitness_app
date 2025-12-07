@@ -26,7 +26,6 @@ const ProgressBar = ({ current, target, color }: { current: number, target: numb
 
 export const ChallengeDetailsScreen = () => {
   const route = useRoute<any>();
-  // Use specific type to ensure .push() is available
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { challengeId } = route.params;
 
@@ -53,7 +52,6 @@ export const ChallengeDetailsScreen = () => {
     return <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>;
   }
 
-  // --- Collaborative Logic ---
   const isSteps = challengeData.goalType === 'STEPS';
   const goalValue = challengeData.goalValue;
   const currentTotal = isSteps ? challengeData.groupProgress.steps : challengeData.groupProgress.calories;
@@ -63,7 +61,6 @@ export const ChallengeDetailsScreen = () => {
   const renderParticipant = ({ item, index }: { item: any, index: number }) => {
     const score = isSteps ? item.totalSteps : item.totalCalories;
 
-    // --- NEW: Navigation Logic ---
     const goToProfile = () => {
       navigation.push('Profile', { userId: item.userId });
     };
@@ -83,10 +80,7 @@ export const ChallengeDetailsScreen = () => {
         <Text style={[styles.score, { color: themeColor }]}>
           {score.toLocaleString()} {isSteps ? 'steps' : 'kcal'}
         </Text>
-        {/* Little chevron to hint interactivity */}
         <View style={{ marginLeft: 8 }}>
-            {/* You can import Ionicons here if you want a visual cue, 
-                but the touch opacity is usually enough */}
         </View>
       </TouchableOpacity>
     );
