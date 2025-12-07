@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { Comment } from '@tier1fitness_app/types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { colors } from '../theme/colors';
 import api from '../services/api';
@@ -25,15 +24,15 @@ type CommentsScreenRouteProp = RouteProp<RootStackParamList, 'Comments'>;
 
 const formatTimeAgo = (isoDate: string) => {
   const diff = (Date.now() - new Date(isoDate).getTime()) / 1000;
+  
+  // FIX: Adjusted math logic to return correct units
   if (diff < 60) return `${Math.floor(diff)}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(isoDate).toLocaleDateString();
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`; // FIXED: Was incorrectly dividing by 86400 here
+  return `${Math.floor(diff / 86400)}d ago`;
 };
 
 const CommentItem = React.memo(({ comment }: { comment: any }) => {
-  // NOTE: We use 'any' here temporarily because the server returns 'text' 
-  // but the shared type might define 'content'. This handles both cases.
   const content = comment.text || comment.content || ""; 
   const timeAgo = formatTimeAgo(comment.createdAt);
 
@@ -43,11 +42,12 @@ const CommentItem = React.memo(({ comment }: { comment: any }) => {
         source={{ uri: comment.author.profilePicUrl }} 
         style={styles.avatar} 
       />
+      {/* FIX: Nested Text Structure for perfect wrapping */}
       <View style={styles.commentContent}>
-        <View style={styles.textContainer}>
-          <Text style={styles.username}>{comment.author.username}</Text>
-          <Text style={styles.commentText}>{content}</Text>
-        </View>
+        <Text style={styles.commentText}>
+          <Text style={styles.username}>{comment.author.username}  </Text>
+          {content}
+        </Text>
         <Text style={styles.timestamp}>{timeAgo}</Text>
       </View>
     </View>
@@ -123,9 +123,9 @@ export function CommentsScreen() {
     <View style={styles.postHeader}>
       <View style={styles.captionContainer}>
         <Image source={{ uri: post.author.profilePicUrl }} style={styles.headerAvatar} />
-        <View style={{flex: 1}}>
+        <View style={styles.headerContent}>
             <Text style={styles.captionText}>
-                <Text style={styles.headerUsername}>{post.author.username} </Text>
+                <Text style={styles.headerUsername}>{post.author.username}  </Text>
                 {post.caption}
             </Text>
             <Text style={styles.timestamp}>{formatTimeAgo(post.createdAt)}</Text>
@@ -210,6 +210,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
+  // Header Styles
   postHeader: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -218,6 +219,7 @@ const styles = StyleSheet.create({
   captionContainer: {
     flexDirection: 'row',
     marginBottom: 12,
+    alignItems: 'flex-start', // Ensure avatar sticks to top
   },
   headerAvatar: {
     width: 36,
@@ -225,6 +227,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginRight: 10,
     backgroundColor: '#333',
+  },
+  headerContent: {
+    flex: 1, // Critical: Allows text to wrap within remaining width
   },
   headerUsername: {
     fontWeight: 'bold',
@@ -240,11 +245,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#334155',
     width: '100%',
   },
-  // Comment Item
+  
+  // Comment Item Styles
   commentItem: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    alignItems: 'flex-start',
   },
   avatar: {
     width: 32,
@@ -254,17 +261,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
   },
   commentContent: {
-    flex: 1,
-  },
-  textContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flex: 1, // Critical: Forces text to stay on screen
   },
   username: {
     fontWeight: 'bold',
     color: colors.text,
-    marginRight: 6,
-    fontSize: 14,
   },
   commentText: {
     color: '#E2E8F0',
@@ -281,7 +282,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
-  // Input
+  
+  // Input Bar Styles
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,7 +294,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: colors.background, // Input darker than bar
+    backgroundColor: colors.background,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
