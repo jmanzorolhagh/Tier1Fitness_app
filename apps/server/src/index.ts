@@ -433,12 +433,10 @@ app.post('/api/challenges', async (req: Request, res: Response) => {
   }
 });
 
-// Join Challenge
 app.post('/api/challenges/join', async (req: Request, res: Response) => {
   try {
     const { userId, challengeId } = req.body;
 
-    // Check if already joined
     const existing = await prisma.challengeParticipant.findUnique({
       where: {
         userId_challengeId: { userId, challengeId }
@@ -495,6 +493,82 @@ app.post('/api/posts/like', async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to like post" });
   }
 });
+app.get('/api/posts/:postId/comments', async (req: Request, res: Response) => {
+  try {
+    const { postId } = req.params;
+
+    const comments = await prisma.comment.findMany({
+      where: { postId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        author: {
+          select: { id: true, username: true, profilePicUrl: true }
+        }
+      }
+    });
+
+    const commentsToSend = comments.map(comment => ({
+      id: comment.id,
+      text: comment.content, 
+      createdAt: comment.createdAt.toISOString(),
+      author: {
+        id: comment.author.id,
+        username: comment.author.username,
+        profilePicUrl: comment.author.profilePicUrl
+      }
+    }));
+
+    res.json(commentsToSend);
+
+  } catch (error) {
+    console.error(`Failed to get comments for post ${req.params.postId}:`, error);
+    res.status(500).json({ error: 'Failed to retrieve comments' });
+  }
+});
+
+app.post('/api/posts/:postId/comments', async (req: Request, res: Response) => {
+  try {
+    const { postId } = req.params;
+    const { authorId, text } = req.body;
+
+    if (!authorId || !text) {
+      return res.status(400).json({ error: "Missing authorId or text" });
+    }
+
+    const newComment = await prisma.comment.create({
+      data: {
+        postId,
+        authorId,
+        content: text 
+      },
+      include: {
+        author: {
+          select: { id: true, username: true, profilePicUrl: true }
+        }
+      }
+    });
+
+    const commentToSend = {
+      id: newComment.id,
+      text: newComment.content,
+      createdAt: newComment.createdAt.toISOString(),
+      author: {
+        id: newComment.author.id,
+        username: newComment.author.username,
+        profilePicUrl: newComment.author.profilePicUrl
+      }
+    };
+
+    res.status(201).json(commentToSend);
+
+  } catch (error) {
+    console.error(`Failed to create comment for post ${req.params.postId}:`, error);
+    res.status(500).json({ error: 'Failed to create comment' });
+  }
+});
+
+
+
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
