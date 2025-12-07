@@ -5,13 +5,17 @@ import { Ionicons } from '@expo/vector-icons';
 import styles from './ProgressScreenStyles';
 import { colors } from '../theme/colors';
 import { StepCounter } from '../components/StepCounter';
-import { VictoryChart } from '../components/VictoryChart'; // <--- Import Chart
+import { VictoryChart } from '../components/VictoryChart';
 import { UserService } from '../services/userService';
 import api from '../services/api';
 import { LeaderboardEntry } from '@tier1fitness_app/types';
 
-// Success Color (Emerald Green)
+// UI Colors
 const SUCCESS_COLOR = '#10B981';
+
+// High Contrast Chart Colors
+const NEON_GREEN = '#4ADE80';
+const NEON_BLUE = '#60A5FA';
 
 const StatCard = ({ icon, label, value, subValue, color, fullWidth = false }: any) => (
   <View style={[styles.statCard, fullWidth && styles.fullWidthCard]}>
@@ -49,7 +53,7 @@ export const ProgressScreen = () => {
   const insets = useSafeAreaInsets();
   const [stats, setStats] = useState({ steps: 0, calories: 0, distance: 0 });
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [history, setHistory] = useState<{ label: string; steps: number }[]>([]); // <--- History State
+  const [history, setHistory] = useState<{ label: string; steps: number }[]>([]);
   const [userRank, setUserRank] = useState<string>('-'); 
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
@@ -61,7 +65,9 @@ export const ProgressScreen = () => {
   const displayPercent = Math.min(Math.round(rawPercent), 100);
   
   const isGoalMet = stats.steps >= STEP_GOAL;
-  const activeColor = isGoalMet ? SUCCESS_COLOR : colors.primary;
+  
+  const uiActiveColor = isGoalMet ? SUCCESS_COLOR : colors.primary;
+  const chartActiveColor = isGoalMet ? NEON_GREEN : NEON_BLUE;
 
   const fetchData = async () => {
     let userId = (await UserService.getUser())?.id;
@@ -72,7 +78,6 @@ export const ProgressScreen = () => {
       setLeaderboard(data);
 
       if (userId) {
-        // 1. Leaderboard Sync
         const myEntry = data.find(entry => entry.user.id === userId);
         setUserRank(myEntry ? `#${myEntry.rank}` : '> 10');
 
@@ -85,7 +90,6 @@ export const ProgressScreen = () => {
             }));
         }
 
-        // 2. Fetch History for Chart
         const historyData = await api.get<any>(`/users/${userId}/history`);
         setHistory(historyData);
       }
@@ -129,33 +133,37 @@ export const ProgressScreen = () => {
         <View style={[
           styles.goalCard, 
           isGoalMet && { 
-            borderColor: activeColor, 
-            backgroundColor: activeColor + '15' 
+            borderColor: uiActiveColor, 
+            backgroundColor: uiActiveColor + '15' 
           }
         ]}>
           <View style={styles.goalHeader}>
             <Text style={styles.goalTitle}>Daily Steps</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={[styles.goalPercent, { color: activeColor }]}>
+              <Text style={[styles.goalPercent, { color: uiActiveColor }]}>
                 {displayPercent}%
               </Text>
-              {isGoalMet && <Ionicons name="checkmark-circle" size={18} color={activeColor} style={{marginLeft: 4}} />}
+              {isGoalMet && <Ionicons name="checkmark-circle" size={18} color={uiActiveColor} style={{marginLeft: 4}} />}
             </View>
           </View>
           
           <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: activeColor }]} />
+            <View style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: uiActiveColor }]} />
           </View>
           
+          {/* FIX: Force text scaling to prevent truncation */}
           <View style={styles.goalStats}>
-            <Text>
+            <Text 
+              numberOfLines={1} 
+              adjustsFontSizeToFit 
+              style={{ width: '100%' }}
+            >
                 <Text style={styles.currentSteps}>{stats.steps.toLocaleString()}</Text>
                 <Text style={styles.totalGoal}> / {STEP_GOAL.toLocaleString()}</Text>
             </Text>
           </View>
 
-          {/* CHART: Always visible, color changes on success */}
-          <VictoryChart data={history} color={activeColor} />
+          <VictoryChart data={history} color={chartActiveColor} />
 
         </View>
 
