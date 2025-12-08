@@ -49,92 +49,63 @@ Users can:
 
 ---
 ## User Guide
-Welcome to **Tier1Fitness**, the social activity tracker designed to gamify your health journey!  
-This manual will guide you through installing the application, setting up your account, and navigating every feature to ensure you get the most out of your experience.
+# Tier1Fitness User Guide
+
+This guide provides instructions on how to install, configure, and use the Tier1Fitness application, along with our testing methodologies and results.
 
 ---
 
 ## 1. Installation & Setup
 
-### Step 1: Download & Install
-- Locate the `Tier1Fitness_FINAL.apk` file provided in the project folder.
-- Tap the file on your Android device to begin installation.
-- **Note:** If prompted, allow *Install from Unknown Sources* in your device settings.
-- Once installed, tap the **Tier1Fitness icon** on your home screen to launch the app.
+To run the application on your device, follow these steps:
 
-### Step 2: Login & Registration
-- **Login Screen:** Appears upon opening the app.
-- **To Log In:**
-  - Enter your **Email** and **Password**.
-  - Tap **Log In**.
-- **To Create a New Account:**
-  - Tap *Don't have an account? Sign Up*.
-  - Enter a **Username**, **Email**, and **Password**.
-  - Tap **Create Account**.  
-    → Your profile picture will be auto-generated from your username initials.
-- **Guest Mode:** Tap *Skip for now (Guest Mode)* to explore without an account.
+### Option A: Android APK (Production Simulation)
+- Download the **Tier1Fitness_FINAL.apk** file from the [Releases/OneDrive] folder.
+- Transfer the file to your Android device.
+- Tap the file to install. Ensure **"Install from Unknown Sources"** is enabled in your settings.
+- Open the app and grant the required permissions (**Physical Activity**) to allow step tracking.
+
+### Option B: Expo Go (Development Mode)
+- Install the **Expo Go** app from the Google Play Store or Apple App Store.
+- Ensure your computer (running the server) and phone are on the same Wi-Fi network.
+- Scan the QR code generated in the terminal after running `npm start`.
 
 ---
 
-##  2. Navigating the App (Tab by Tab)
+## 2. Using the App
 
-The app is organized into a **bottom navigation bar** with five main tabs:
-
-### Tab 1: Home (The Feed)
-- **Viewing Posts:** Scroll to see workout updates, photos, and challenge announcements.
-- **Liking a Post:** Tap the ❤️ icon to like/unlike.
-- **Comments:**
-  - Tap 💬 to open the comment feed.
-  - Read or type your own message, then tap **Send**.
-- **Searching for Users:**
-  - Tap 🔍 in the top-right corner.
-  - Enter a username (e.g., *Josh*).
-  - Tap a result to view their **External Profile**.
+- **Sign Up**: Launch the app and select *Create Account*. Enter a username, email, and password to generate your profile.  
+- **Track Activity**: Navigate to the *Progress* tab to view your live step count and leaderboard ranking.  
+- **Socialize**: Use the *Home* tab to view the community feed. Double-tap posts to like them or tap the bubble icon to comment.  
+- **Compete**: Go to the *Challenges* tab to create a new competition (e.g., *30k Steps Weekend*) or join an existing one.  
 
 ---
 
-### Tab 2: Challenges
-- **Active Challenges:** View all current competitions.
-- **Joining a Challenge:**
-  - Tap a **Challenge Card** → Review goal & duration.
-  - Tap **Join Team Challenge**.
-- **Tracking Progress:**
-  - Progress bar updates as your team advances.
-  - When complete → Card turns green with **GOAL ACHIEVED! 🏆**
+## Testing Strategies
+
+To ensure app stability and performance, we employed a combination of **Manual Black-Box Testing** and **API Integration Testing**.
+
+- **Functional Testing**: We manually verified user flows (Login → Feed → Profile) on physical devices (Pixel 5, Samsung S22) to ensure the UI handles different screen sizes and "Edge-to-Edge" Android layouts correctly.  
+- **API Logic Testing**: We verified backend endpoints using Postman to ensure correct HTTP status codes (200 for success, 404 for not found, 401 for unauthorized) before connecting the frontend.  
+- **Usability Testing**: We conducted "Guest Mode" walkthroughs to ensure non-registered users could still navigate the app without crashing.  
 
 ---
 
-### Tab 3: Create (Post & Challenge)
-- **Mode Toggle:** Switch between *Post* or *Challenge*.
-- **Creating a Post:**
-  - Select category (Workout, Progress Photo, Milestone).
-  - Write a caption (e.g., *Just ran my first 5k!*).
-  - (Optional) Add image URL.
-  - Tap **Share Post**.
-- **Creating a Challenge:**
-  - Enter **Title** & **Description**.
-  - Select **Metric** (Steps/Calories) + **Target Amount**.
-  - Choose **Duration** (3 Days, 1 Week, etc.).
-  - Tap **Launch Challenge** → Announcement auto-posts to Home Feed.
+## Sample Test Cases & Results
+
+The following test cases were executed on an Android device (**Samsung Galaxy S21**) running **Android 14**.
+
+| ID   | Test Scenario        | Steps to Reproduce                                                                 | Expected Result                                                                 | Actual Result                                                                 | Status |
+|------|----------------------|------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|--------------------------------------------------------------------------------|--------|
+| TC01 | User Registration    | 1. Open App.<br>2. Switch toggle to "Sign Up".<br>3. Enter valid email/pass.<br>4. Tap Create. | User is redirected to Home Feed; Profile data is saved to DB.                    | User redirected; "User created" log appeared in server console.                | PASS   |
+| TC02 | Step Tracking        | 1. Grant "Physical Activity" permission.<br>2. Walk 10 steps.<br>3. Check Progress Tab. | Step counter updates in real-time or within 2 seconds.                           | Step counter incremented correctly from 0 to 10.                               | PASS   |
+| TC03 | Search Functionality | 1. Go to Home.<br>2. Tap Search Icon.<br>3. Type "Josh".                            | List of users matching "Josh" appears (Debounced).                               | List populated after 500ms delay.                                              | PASS   |
+| TC04 | Create Challenge     | 1. Go to Create Tab.<br>2. Select "Challenge".<br>3. Set Title "Walk off".<br>4. Tap Launch. | Challenge created, user redirected to Challenge list, Auto-post added to feed.   | Challenge appeared in list and on Home Feed.                                   | PASS   |
+| TC05 | Android Layout       | 1. Open Profile Screen on Android.<br>2. Check top status bar and bottom nav bar.   | Content should not be hidden behind status bar or white nav bar.                 | Layout respects Safe Area; Custom header used to clear status bar.             | PASS   |
+| TC06 | Invalid Login        | 1. Open App.<br>2. Enter email not in DB.<br>3. Tap Log In.                         | Alert popup: "User not found".                                                   | Alert popup displayed correctly.                                               | PASS   |
 
 ---
 
-### Tab 4: Progress (Stats)
-- **Daily Step Counter:** Displays steps vs. 10,000-step goal.
-- **Victory Chart:** Shows 7-day step history if goal achieved.
-- **Metrics:** Calories burned + Distance traveled.
-- **Global Leaderboard:** Ranks top 10 movers worldwide for the day.
-
----
-
-### Tab 5: Profile
-- **Personal Profile:**
-  - Stats: Posts, Followers, Following.
-  - **Trophy Case:** Earned badges (e.g., *Socialite*, *10k Club*).
-- **Edit Profile:** Update Bio or Profile Picture URL.
-- **Log Out:** Securely sign out.
-- **Followers / Following:** Tap numbers to view connected users.
-- **My Posts:** History of shared posts. Toggle between *List View* and *Grid View*.
 
 ---
 ## Quick Deployment Instructions (Expo + Cloud Backend)
