@@ -16,7 +16,12 @@
    - [Database Layer (Supabase)](#1-database-layer-supabase)  
    - [Backend Deployment (Render)](#2-backend-deployment-render)    
 10. [The Team](#the-team)
-
+---
+### **IMPORTANT: Server "Cold Start" Delay**
+- The backend for this project is hosted on Render's Free Tier. This service automatically "spins down" after 15 minutes of inactivity to save resources.
+**When you first open the app, it may take 50–60 seconds for the server to wake up.**
+- Please be patient during the first Login or Signup attempt. Once the server is active, the app will function at normal speed.
+---
 ### App Screenshots
 
 | Login | Login | Home Feed | Comment Feed |
@@ -116,7 +121,11 @@ If you only want to **use the Tier1Fitness app via Expo**, without setting up yo
 The app is already configured to connect to our **Render-hosted API** and **Supabase database**, so you don’t need to run any servers locally.
 
 ---
-
+### **IMPORTANT: Server "Cold Start" Delay**
+- The backend for this project is hosted on Render's Free Tier. This service automatically "spins down" after 15 minutes of inactivity to save resources.
+**When you first open the app, it may take 50–60 seconds for the server to wake up.**
+- Please be patient during the first Login or Signup attempt. Once the server is active, the app will function at normal speed.
+---
 ### 1. Prerequisites
 - Install [Node.js](https://nodejs.org/) (v18+ recommended)  
 - Install [Expo Go](https://expo.dev/client) on your mobile device (iOS or Android)  
