@@ -8,12 +8,13 @@
 2. [Key Features](#key-features)
 3. [User Guide](#user-guide)
 4. [Quick Deployment Instructions (Expo + Cloud Backend)](#quick-deployment-instructions-expo--cloud-backend)  
-5. [Local-Only Setup Instructions](#local-only-setup-instructions)  
-6. [Technology Stack](#technology-stack)  
-7. [Cloud Infrastructure & Workflow](#cloud-infrastructure--workflow)  
+5. [Local-Only Setup Instructions](#local-only-setup-instructions)
+6. [Endpoints](#endpoints)
+7. [Technology Stack](#technology-stack)  
+8. [Cloud Infrastructure & Workflow](#cloud-infrastructure--workflow)  
    - [Database Layer (Supabase)](#1-database-layer-supabase)  
    - [Backend Deployment (Render)](#2-backend-deployment-render)    
-8. [The Team](#the-team)
+9. [The Team](#the-team)
 
 ### App Screenshots
 
@@ -218,7 +219,95 @@ This project is structured as a **Monorepo** managed by npm workspaces.
 | Hosting     | ![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white) | Continuous Deployment (CI/CD) for backend API |
 | Builds      | ![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white) | Cloud build pipeline for Android APKs and iOS IPAs |
 ---
+## Endpoints
 
+### General
+- **GET `/api`**  
+  Health check. Returns `{ message: "Tier1Fitness API is running!" }`.
+
+### Authentication
+- **POST `/api/login`**  
+  Login with email + password.  
+  **Returns**: User object `{ id, username, email, created }`.
+
+### Users
+- **POST `/api/users/create`**  
+  Create a new user.  
+  **Returns**: Newly created user `{ id, username, email, created }`.
+
+- **GET `/api/users/search?q=term`**  
+  Search users by username.  
+  **Returns**: Array of users `{ id, username, profilePicUrl, followerCount }`.
+
+- **POST `/api/users/follow`**  
+  Toggle follow/unfollow another user.  
+  **Returns**: `{ isFollowing: true/false }`.
+
+- **GET `/api/users/:id`**  
+  Get user profile with posts, follower/following counts, badges, health stats.  
+  **Returns**: Profile object `{ id, username, bio, profilePicUrl, followerCount, followingCount, posts[], healthStats, isFollowing, badges[] }`.
+
+- **GET `/api/users/:userId/history`**  
+  Get last 7 days of step history.  
+  **Returns**: Array of `{ label: "Mon", steps: 1234 }`.
+
+- **GET `/api/users/:userId/followers`**  
+  List followers.  
+  **Returns**: Array of `{ id, username, profilePicUrl }`.
+
+- **GET `/api/users/:userId/following`**  
+  List following.  
+  **Returns**: Array of `{ id, username, profilePicUrl }`.
+
+### Posts
+- **GET `/api/posts?userId=...`**  
+  Get all posts, ordered by newest.  
+  **Returns**: Array of posts `{ id, caption, imageUrl, postType, createdAt, author, likeCount, commentCount, hasLiked }`.
+
+- **POST `/api/posts`**  
+  Create a new post.  
+  **Returns**: Newly created post object.
+
+- **POST `/api/posts/like`**  
+  Toggle like/unlike a post.  
+  **Returns**: `{ liked: true/false, newCount: number }`.
+
+- **GET `/api/posts/:postId/comments`**  
+  Get comments for a post.  
+  **Returns**: Array of `{ id, text, createdAt, author }`.
+
+- **POST `/api/posts/:postId/comments`**  
+  Add a comment to a post.  
+  **Returns**: Newly created comment object.
+
+### Health Data
+- **POST `/api/healthdata`**  
+  Upsert today’s health data.  
+  **Returns**: HealthData record `{ userId, date, dailySteps, dailyCalories, totalWorkouts }`.
+
+### Leaderboard
+- **GET `/api/leaderboard`**  
+  Get top 10 users by daily steps.  
+  **Returns**: Array of `{ rank, user: { id, username, profilePicUrl }, score }`.
+
+### Challenges
+- **GET `/api/challenges`**  
+  Get all public challenges with aggregated progress.  
+  **Returns**: Array of challenges `{ id, title, description, startDate, endDate, participantCount, goalType, goalValue, currentProgress, creator }`.
+
+- **POST `/api/challenges`**  
+  Create a new challenge.  
+  **Returns**: Newly created challenge object.
+
+- **POST `/api/challenges/join`**  
+  Join a challenge.  
+  **Returns**: `{ success: true }`.
+
+- **GET `/api/challenges/:id`**  
+  Get challenge details, participants, and group progress.  
+  **Returns**: Challenge object with participant stats and group totals.
+
+---
 ## Cloud Infrastructure & Workflow
 
 ### 1. Database Layer (Supabase)
