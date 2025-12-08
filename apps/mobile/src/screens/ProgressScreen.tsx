@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import styles from './ProgressScreenStyles';
 import { colors } from '../theme/colors';
 import { StepCounter } from '../components/StepCounter';
-import { VictoryChart } from '../components/VictoryChart';
+// import { VictoryChart } from '../components/VictoryChart'; 
 import { UserService } from '../services/userService';
 import api from '../services/api';
 import { LeaderboardEntry } from '@tier1fitness_app/types';
@@ -151,7 +151,6 @@ export const ProgressScreen = () => {
             <View style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: uiActiveColor }]} />
           </View>
           
-          {/* FIX: Force text scaling to prevent truncation */}
           <View style={styles.goalStats}>
             <Text 
               numberOfLines={1} 
@@ -163,7 +162,8 @@ export const ProgressScreen = () => {
             </Text>
           </View>
 
-          <VictoryChart data={history} color={chartActiveColor} />
+          {/* <VictoryChart data={history} color={chartActiveColor} /> */} 
+          {/* Chart temporarily disabled */}
 
         </View>
 
