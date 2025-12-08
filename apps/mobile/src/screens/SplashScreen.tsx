@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import styles from './SplashScreenStyles';
 import { colors } from '../theme/colors';
-import api, { MY_DEMO_USER_ID } from '../services/api'; // Import the ID
+import api, { MY_DEMO_USER_ID } from '../services/api';
 import { UserService } from '../services/userService';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,7 +24,7 @@ import { User } from '@tier1fitness_app/types';
 type SplashNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
 
 export const SplashScreen = () => {
-  const [isLogin, setIsLogin] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
   
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -157,7 +157,7 @@ export const SplashScreen = () => {
           <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <Text style={{ color: colors.primary, fontWeight: 'bold' }}>
-              {isLogin ? 'Sign Up     ' : 'Log In     '}
+              {isLogin ? 'Sign Up   ' : 'Log In   '}
             </Text>
           </Text>
         </TouchableOpacity>
