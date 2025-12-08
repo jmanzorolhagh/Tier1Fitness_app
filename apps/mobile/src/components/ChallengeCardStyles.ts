@@ -29,7 +29,7 @@ export const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)', // Gold/Orange tint
+    backgroundColor: 'rgba(245, 158, 11, 0.15)', 
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -100,7 +100,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   joinedButton: {
-    backgroundColor: '#10B981', // Green
+    backgroundColor: '#10B981', 
   },
   joinButtonText: {
     color: '#FFF',

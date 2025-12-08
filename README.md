@@ -4,7 +4,6 @@
 ![Build](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 
 ---
-
 1. [Project Overview](#project-overview)  
 2. [Key Features](#key-features)
 3. [User Guide](#user-guide)

@@ -91,7 +91,6 @@ const TabsNavigator = () => (
         tabBarIcon: ({ focused }) => (
           <TabBarIcon focused={focused} label="Home" iconName="home-outline" />
         ),
-        // Search Button in Header
         headerRight: () => (
           <TouchableOpacity 
             onPress={() => navigation.navigate('Search')}

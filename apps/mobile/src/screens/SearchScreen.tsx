@@ -9,7 +9,6 @@ import {
   StyleSheet, 
   ActivityIndicator 
 } from 'react-native';
-// 1. Import SafeAreaView
 import { SafeAreaView } from 'react-native-safe-area-context'; 
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,7 +17,6 @@ import { colors } from '../theme/colors';
 import api from '../services/api';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
-// ... (keep useDebounce helper the same) ...
 const useDebounce = (value: string, delay: number) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -31,7 +29,6 @@ const useDebounce = (value: string, delay: number) => {
 export const SearchScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   
-  // No need for 'const insets = useSafeAreaInsets()' anymore
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
@@ -74,11 +71,8 @@ export const SearchScreen = () => {
   );
 
   return (
-    // 2. Use SafeAreaView wrapper
-    // 'edges' prop ensures we only add padding to the top (Status Bar)
     <SafeAreaView style={styles.container} edges={['top']}>
       
-      {/* Search Header */}
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
@@ -102,7 +96,6 @@ export const SearchScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Results */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />

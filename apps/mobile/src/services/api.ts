@@ -61,7 +61,6 @@ const api = {
       throw error;
     }
   },
-  // Add this method inside the 'const api = { ... }' object in src/services/api.ts
 
   put: async <T>(endpoint: string, body: any): Promise<T> => {
     const fullUrl = `${API_BASE_URL}${endpoint}`;

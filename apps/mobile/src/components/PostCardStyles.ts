@@ -3,13 +3,12 @@ import { colors } from '../theme/colors';
 
 export const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface, // Ensure this is a distinct color from the background (e.g., #1E1E1E vs #121212)
+    backgroundColor: colors.surface, 
     borderRadius: 16,
-    marginHorizontal: 16, // Pulls the card away from the screen edges
-    marginBottom: 20,     // Adds space between cards
-    overflow: 'hidden',   // Clips the image to match the rounded corners
+    marginHorizontal: 16,
+    marginBottom: 20,    
+    overflow: 'hidden',  
     
-    // --- Shadow & Elevation (The "Sleek" Look) ---
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -18,11 +17,11 @@ export const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 6, // Adds depth on Android
+        elevation: 6, 
       },
     }),
     borderWidth: 1,
-    borderColor: '#2A2A2A', // Very subtle border for definition
+    borderColor: '#2A2A2A', 
   },
   header: {
     flexDirection: 'row',
@@ -50,13 +49,13 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
   },
-  // Badge styling from previous step
+
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 20, // More rounded for the sleek look
+    borderRadius: 20, 
   },
   badgeText: {
     fontSize: 10,
@@ -72,7 +71,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)', // Very subtle contrast for the action bar
+    backgroundColor: 'rgba(255, 255, 255, 0.02)', 
   },
   actionItem: {
     flexDirection: 'row',
@@ -87,11 +86,11 @@ export const styles = StyleSheet.create({
   },
   captionContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 16, // More breathing room
+    paddingBottom: 16, 
   },
   caption: {
     fontSize: 15,
-    lineHeight: 24, // Better readability
+    lineHeight: 24,
     color: '#E0E0E0',
   }
 });

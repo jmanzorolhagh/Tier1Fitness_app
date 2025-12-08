@@ -25,10 +25,9 @@ type CommentsScreenRouteProp = RouteProp<RootStackParamList, 'Comments'>;
 const formatTimeAgo = (isoDate: string) => {
   const diff = (Date.now() - new Date(isoDate).getTime()) / 1000;
   
-  // FIX: Adjusted math logic to return correct units
   if (diff < 60) return `${Math.floor(diff)}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`; // FIXED: Was incorrectly dividing by 86400 here
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
 };
 
@@ -42,7 +41,6 @@ const CommentItem = React.memo(({ comment }: { comment: any }) => {
         source={{ uri: comment.author.profilePicUrl }} 
         style={styles.avatar} 
       />
-      {/* FIX: Nested Text Structure for perfect wrapping */}
       <View style={styles.commentContent}>
         <Text style={styles.commentText}>
           <Text style={styles.username}>{comment.author.username}  </Text>
@@ -97,7 +95,6 @@ export function CommentsScreen() {
     setIsSending(true);
     const commentToSend = newCommentText.trim();
     
-    // Optimistic clear
     setNewCommentText(''); 
 
     try {
@@ -108,12 +105,11 @@ export function CommentsScreen() {
       
       const newComment = await api.post<any>(`/posts/${post.id}/comments`, payload);
       
-      // Append new comment to the bottom
       setComments(prev => [...prev, newComment]);
 
     } catch (e: any) {
       Alert.alert('Error', 'Failed to post comment.');
-      setNewCommentText(commentToSend); // Restore text on failure
+      setNewCommentText(commentToSend); 
     } finally {
       setIsSending(false);
     }

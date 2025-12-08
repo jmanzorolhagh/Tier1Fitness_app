@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Pedometer } from 'expo-sensors';
-import { Alert, Linking, AppState } from 'react-native'; // Added Linking
+import { Alert, Linking, AppState } from 'react-native'; 
 import api from '../services/api';
 import { UserService } from '../services/userService';
 
@@ -36,7 +36,6 @@ export const StepCounter: React.FC<StepCounterProps> = ({ onDataUpdate }) => {
         calories: Math.floor(steps * 0.04),
       });
     } catch (e) {
-      // Fail silently
     }
   };
 
@@ -61,17 +60,15 @@ export const StepCounter: React.FC<StepCounterProps> = ({ onDataUpdate }) => {
         
         if (!isAvailable) return;
 
-        // requestPermissionsAsync will return the current status if already decided
         const perm = await Pedometer.requestPermissionsAsync();
         console.log('[Pedometer] Permission:', perm.status);
 
         if (perm.status !== 'granted') {
-          // If denied, show the manual fix dialog
           showSettingsAlert();
           return;
         }
 
-        // --- Permission Granted: Start Tracking ---
+     
 
         const end = new Date();
         const start = new Date();

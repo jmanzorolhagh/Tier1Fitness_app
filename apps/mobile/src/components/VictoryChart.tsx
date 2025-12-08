@@ -28,14 +28,12 @@ export const VictoryChart: React.FC<VictoryChartProps> = ({ data, color }) => {
         yAxisLabel=""
         yAxisSuffix=""
         chartConfig={{
-          // 1. Force Background Transparency
           backgroundColor: 'transparent',
-          backgroundGradientFrom: '#fff', // Color doesn't matter if opacity is 0
+          backgroundGradientFrom: '#fff', 
           backgroundGradientFromOpacity: 0,
           backgroundGradientTo: '#fff',
           backgroundGradientToOpacity: 0,
           
-          // 2. Force Bars to be SOLID (No fade)
           fillShadowGradient: color,
           fillShadowGradientOpacity: 1,
           fillShadowGradientFrom: color,
@@ -59,7 +57,6 @@ export const VictoryChart: React.FC<VictoryChartProps> = ({ data, color }) => {
         style={{ 
           paddingRight: 0,
           marginTop: 10,
-          // Extra safety to ensure the View holding the SVG is transparent
           backgroundColor: 'transparent' 
         }}
       />

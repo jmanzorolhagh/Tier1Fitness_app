@@ -54,7 +54,7 @@ export const ChallengeScreen = () => {
           renderItem={({ item }) => (
             <ChallengeCard 
               challenge={item} 
-              onJoinSuccess={onRefresh} // Refresh data to update count
+              onJoinSuccess={onRefresh} 
             />
           )}
           contentContainerStyle={styles.listContent}

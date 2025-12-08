@@ -49,7 +49,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
         challengeId: challenge.id
       });
       setJoined(true);
-      Alert.alert("Welcome Aboard! 🚀", "You've joined the team.");
+      Alert.alert("Welcome Aboard!", "You've joined the team.");
       if (onJoinSuccess) onJoinSuccess();
     } catch (e: any) {
       Alert.alert("Error", e.message || "Failed to join.");
@@ -67,7 +67,6 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // --- CALCULATION LOGIC ---
   const isSteps = challenge.goalType === 'STEPS';
   const themeColor = isSteps ? colors.primary : colors.accent;
   
@@ -75,8 +74,8 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
   const target = challenge.goalValue;
   
   const rawPercent = (current / target) * 100;
-  const percentValue = Math.min(rawPercent, 100); // Cap Bar at 100%
-  const percentDisplay = Math.min(Math.round(rawPercent), 100); // Cap Text at 100%
+  const percentValue = Math.min(rawPercent, 100);
+  const percentDisplay = Math.min(Math.round(rawPercent), 100); 
   const isCompleted = current >= target;
 
   const activeColor = isCompleted ? SUCCESS_COLOR : themeColor;
@@ -87,7 +86,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
       style={[
         styles.card,
         isCompleted && { 
-            backgroundColor: activeColor + '15', // ~10% opacity
+            backgroundColor: activeColor + '15', 
             borderColor: activeColor,
             borderWidth: 1
         }
@@ -95,7 +94,6 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
       activeOpacity={0.9} 
       onPress={goToDetails}
     >
-      {/* Header */}
       <View style={styles.header}>
         <View style={[styles.iconBadge, { backgroundColor: activeColor + '20' }]}>
           <Ionicons name={goalIcon as any} size={20} color={activeColor} />
@@ -132,9 +130,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
           )}
         </View>
         
-        {/* Progress Bar Background */}
         <View style={{ height: 10, backgroundColor: colors.background, borderRadius: 5, overflow: 'hidden' }}>
-          {/* Progress Bar Fill */}
           <View style={{ 
             width: `${percentValue}%`, 
             height: '100%', 
@@ -148,7 +144,6 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
         </Text>
       </View>
 
-      {/* Action Area */}
       {!joined && !isCompleted && (
         <TouchableOpacity 
           style={styles.joinButton} 
@@ -163,7 +158,6 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoinS
         </TouchableOpacity>
       )}
 
-      {/* Footer */}
       <View style={[styles.footer, (joined || isCompleted) && { marginTop: 0 }]}>
         <View style={styles.creatorContainer}>
           <Image source={{ uri: challenge.creator.profilePicUrl }} style={styles.avatar} />
