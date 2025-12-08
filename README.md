@@ -9,12 +9,13 @@
 3. [User Guide](#user-guide)
 4. [Quick Deployment Instructions (Expo + Cloud Backend)](#quick-deployment-instructions-expo--cloud-backend)  
 5. [Local-Only Setup Instructions](#local-only-setup-instructions)
-6. [Endpoints](#endpoints)
-7. [Technology Stack](#technology-stack)  
-8. [Cloud Infrastructure & Workflow](#cloud-infrastructure--workflow)  
+6. [Database](#database)
+7. [Endpoints](#endpoints)
+8. [Technology Stack](#technology-stack)  
+9. [Cloud Infrastructure & Workflow](#cloud-infrastructure--workflow)  
    - [Database Layer (Supabase)](#1-database-layer-supabase)  
    - [Backend Deployment (Render)](#2-backend-deployment-render)    
-9. [The Team](#the-team)
+10. [The Team](#the-team)
 
 ### App Screenshots
 
@@ -218,6 +219,43 @@ This project is structured as a **Monorepo** managed by npm workspaces.
 | ORM         | ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white) | Type-safe database client and schema migration tool |
 | Hosting     | ![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white) | Continuous Deployment (CI/CD) for backend API |
 | Builds      | ![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white) | Cloud build pipeline for Android APKs and iOS IPAs |
+---
+
+## Database
+# Database Setup (Using npm Scripts)
+
+This project uses **Prisma** with convenient npm scripts (defined in `server/package.json`) to manage the database. Follow these steps to set up your database, generate the client, inspect data, and seed initial records.
+
+### 1. First-time Setup (Run once)
+
+
+# 1. Apply migrations → creates all tables
+```bash
+npm run db:migrate
+```
+### 2. Generate Prisma Client
+```bash
+npm run db:generate
+```
+### 3. Seed initial data (users, challenges, health stats, etc.)
+```bash
+npx prisma db seed
+```
+### When you change prisma/schema.prisma
+```bash
+npm run db:migrate      # apply new schema changes
+npm run db:generate      # update types
+```
+
+### Quick data inspection / manual edits
+```bash
+npm run db:studio        # opens http://localhost:5555
+```
+### Reset everything with fresh sample data
+```bash
+npx prisma db push --force-reset   # warning: deletes all data
+npx prisma db seed
+```
 ---
 ## Endpoints
 
