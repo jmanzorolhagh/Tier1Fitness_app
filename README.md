@@ -6,14 +6,15 @@
 ---
 
 1. [Project Overview](#project-overview)  
-2. [Key Features](#key-features)  
-3. [Technology Stack](#technology-stack)  
-4. [Cloud Infrastructure & Workflow](#cloud-infrastructure--workflow)  
+2. [Key Features](#key-features)
+3. [User Guide](#user-guide)
+4. [Quick Deployment Instructions (Expo + Cloud Backend)](#quick-deployment-instructions-expo--cloud-backend)  
+5. [Local-Only Setup Instructions](#local-only-setup-instructions)  
+6. [Technology Stack](#technology-stack)  
+7. [Cloud Infrastructure & Workflow](#cloud-infrastructure--workflow)  
    - [Database Layer (Supabase)](#1-database-layer-supabase)  
-   - [Backend Deployment (Render)](#2-backend-deployment-render)  
-5. [Quick Deployment Instructions (Expo + Cloud Backend)](#quick-deployment-instructions-expo--cloud-backend)  
-6. [Local-Only Setup Instructions](#local-only-setup-instructions)  
-7. [The Team](#the-team)
+   - [Backend Deployment (Render)](#2-backend-deployment-render)    
+8. [The Team](#the-team)
 
 ### App Screenshots
 
@@ -46,55 +47,97 @@ Users can:
 - **Automated Tracking**: Background activity tracking using Expo sensors  
 - **Global Leaderboard**: Daily rankings aggregated from user data  
 - **Progress Dashboard**: Unified view of personal health metrics and competitive standing
-  
-<img width="1310" height="152" alt="{752DE4FA-2171-4EBE-BEDB-09DF3105C663}" src="https://github.com/user-attachments/assets/c857021e-e8e4-4bde-b56e-8bb20700db94" />
 
-
-<img width="1310" height="56" alt="{9889C80C-7C36-45B6-A7B4-114BA8AA0D18}" src="https://github.com/user-attachments/assets/5761b18b-62b7-405f-8807-76e13764e540" />
+---
+## User Guide
+Welcome to **Tier1Fitness**, the social activity tracker designed to gamify your health journey!  
+This manual will guide you through installing the application, setting up your account, and navigating every feature to ensure you get the most out of your experience.
 
 ---
 
-## Technology Stack
-This project is structured as a **Monorepo** managed by npm workspaces.
+## 1. Installation & Setup
 
-| Component   | Technology             | Description |
-|-------------|------------------------|-------------|
-| Frontend    | ![React Native](https://img.shields.io/badge/React%20Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) | Managed workflow using TypeScript and React Navigation |
-| Backend     | ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white) | RESTful API server handling auth, business logic, and aggregation |
-| Database    | ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white) | Managed cloud database with high availability |
-| ORM         | ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white) | Type-safe database client and schema migration tool |
-| Hosting     | ![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white) | Continuous Deployment (CI/CD) for backend API |
-| Builds      | ![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white) | Cloud build pipeline for Android APKs and iOS IPAs |
----
+### Step 1: Download & Install
+- Locate the `Tier1Fitness_FINAL.apk` file provided in the project folder.
+- Tap the file on your Android device to begin installation.
+- **Note:** If prompted, allow *Install from Unknown Sources* in your device settings.
+- Once installed, tap the **Tier1Fitness icon** on your home screen to launch the app.
 
-## Cloud Infrastructure & Workflow
-
-### 1. Database Layer (Supabase)
-We chose **Supabase** for its robust PostgreSQL features.  
-A critical decision was using the **Transaction Pooler (Port 6543)** instead of the Session Pooler, enabling serverless-style deployment on Render without exhausting database limits.
-
-**Data Model Highlights:**
-- **User**: Authentication and profile data  
-- **Challenge & ChallengeParticipant**: Many-to-many relationship between users and competitions  
-- **HealthData**: Daily activity logs linked to users  
-
-<img width="1920" height="876" alt="{D555F92F-1A5D-429D-8327-F701DD62FC5C}" src="https://github.com/user-attachments/assets/d9e3fdb4-a7ed-4166-8dda-5da10a0251d5" />
+### Step 2: Login & Registration
+- **Login Screen:** Appears upon opening the app.
+- **To Log In:**
+  - Enter your **Email** and **Password**.
+  - Tap **Log In**.
+- **To Create a New Account:**
+  - Tap *Don't have an account? Sign Up*.
+  - Enter a **Username**, **Email**, and **Password**.
+  - Tap **Create Account**.  
+    → Your profile picture will be auto-generated from your username initials.
+- **Guest Mode:** Tap *Skip for now (Guest Mode)* to explore without an account.
 
 ---
 
-### 2. Backend Deployment (Render)
-The backend is deployed to **Render Web Services** with CI/CD configured to auto-deploy on pushes to `main`.
+##  2. Navigating the App (Tab by Tab)
 
-Render automatically executes the following during deployment:
+The app is organized into a **bottom navigation bar** with five main tabs:
 
-- **Build Command**: `npm install && npx prisma generate && npm run build`  
-- **Start Command**: `npm start`  
-
-<img width="1904" height="903" alt="{5EC3CF07-BB07-40FF-B2D0-0BEC47CFDFEB}" src="https://github.com/user-attachments/assets/755ec574-5f0a-4778-8c0d-368143a8a957" />
+### Tab 1: Home (The Feed)
+- **Viewing Posts:** Scroll to see workout updates, photos, and challenge announcements.
+- **Liking a Post:** Tap the ❤️ icon to like/unlike.
+- **Comments:**
+  - Tap 💬 to open the comment feed.
+  - Read or type your own message, then tap **Send**.
+- **Searching for Users:**
+  - Tap 🔍 in the top-right corner.
+  - Enter a username (e.g., *Josh*).
+  - Tap a result to view their **External Profile**.
 
 ---
 
+### Tab 2: Challenges
+- **Active Challenges:** View all current competitions.
+- **Joining a Challenge:**
+  - Tap a **Challenge Card** → Review goal & duration.
+  - Tap **Join Team Challenge**.
+- **Tracking Progress:**
+  - Progress bar updates as your team advances.
+  - When complete → Card turns green with **GOAL ACHIEVED! 🏆**
 
+---
+
+### Tab 3: Create (Post & Challenge)
+- **Mode Toggle:** Switch between *Post* or *Challenge*.
+- **Creating a Post:**
+  - Select category (Workout, Progress Photo, Milestone).
+  - Write a caption (e.g., *Just ran my first 5k!*).
+  - (Optional) Add image URL.
+  - Tap **Share Post**.
+- **Creating a Challenge:**
+  - Enter **Title** & **Description**.
+  - Select **Metric** (Steps/Calories) + **Target Amount**.
+  - Choose **Duration** (3 Days, 1 Week, etc.).
+  - Tap **Launch Challenge** → Announcement auto-posts to Home Feed.
+
+---
+
+### Tab 4: Progress (Stats)
+- **Daily Step Counter:** Displays steps vs. 10,000-step goal.
+- **Victory Chart:** Shows 7-day step history if goal achieved.
+- **Metrics:** Calories burned + Distance traveled.
+- **Global Leaderboard:** Ranks top 10 movers worldwide for the day.
+
+---
+
+### Tab 5: Profile
+- **Personal Profile:**
+  - Stats: Posts, Followers, Following.
+  - **Trophy Case:** Earned badges (e.g., *Socialite*, *10k Club*).
+- **Edit Profile:** Update Bio or Profile Picture URL.
+- **Log Out:** Securely sign out.
+- **Followers / Following:** Tap numbers to view connected users.
+- **My Posts:** History of shared posts. Toggle between *List View* and *Grid View*.
+
+---
 ## Quick Deployment Instructions (Expo + Cloud Backend)
 
 If you only want to **use the Tier1Fitness app via Expo**, without setting up your own backend or database, follow these steps.  
@@ -148,6 +191,11 @@ You’re now running Tier1Fitness with live cloud infrastructure:
 
 No local backend setup required — just clone, install, and run via Expo.
 
+<img width="1310" height="152" alt="{752DE4FA-2171-4EBE-BEDB-09DF3105C663}" src="https://github.com/user-attachments/assets/c857021e-e8e4-4bde-b56e-8bb20700db94" />
+
+
+<img width="1310" height="56" alt="{9889C80C-7C36-45B6-A7B4-114BA8AA0D18}" src="https://github.com/user-attachments/assets/5761b18b-62b7-405f-8807-76e13764e540" />
+
 ---
 ## Local-Only Setup Instructions
 
@@ -187,6 +235,44 @@ Start the local Express server:
 npm run dev -w server
 ```
 This will boot the API at http://localhost:3000/api.
+---
+## Technology Stack
+This project is structured as a **Monorepo** managed by npm workspaces.
+
+| Component   | Technology             | Description |
+|-------------|------------------------|-------------|
+| Frontend    | ![React Native](https://img.shields.io/badge/React%20Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) | Managed workflow using TypeScript and React Navigation |
+| Backend     | ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white) | RESTful API server handling auth, business logic, and aggregation |
+| Database    | ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white) | Managed cloud database with high availability |
+| ORM         | ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white) | Type-safe database client and schema migration tool |
+| Hosting     | ![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white) | Continuous Deployment (CI/CD) for backend API |
+| Builds      | ![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white) | Cloud build pipeline for Android APKs and iOS IPAs |
+---
+
+## Cloud Infrastructure & Workflow
+
+### 1. Database Layer (Supabase)
+We chose **Supabase** for its robust PostgreSQL features.  
+A critical decision was using the **Transaction Pooler (Port 6543)** instead of the Session Pooler, enabling serverless-style deployment on Render without exhausting database limits.
+
+**Data Model Highlights:**
+- **User**: Authentication and profile data  
+- **Challenge & ChallengeParticipant**: Many-to-many relationship between users and competitions  
+- **HealthData**: Daily activity logs linked to users  
+
+<img width="1920" height="876" alt="{D555F92F-1A5D-429D-8327-F701DD62FC5C}" src="https://github.com/user-attachments/assets/d9e3fdb4-a7ed-4166-8dda-5da10a0251d5" />
+
+---
+
+### 2. Backend Deployment (Render)
+The backend is deployed to **Render Web Services** with CI/CD configured to auto-deploy on pushes to `main`.
+
+Render automatically executes the following during deployment:
+
+- **Build Command**: `npm install && npx prisma generate && npm run build`  
+- **Start Command**: `npm start`  
+
+<img width="1904" height="903" alt="{5EC3CF07-BB07-40FF-B2D0-0BEC47CFDFEB}" src="https://github.com/user-attachments/assets/755ec574-5f0a-4778-8c0d-368143a8a957" />
 
 ---
 ## The Team
