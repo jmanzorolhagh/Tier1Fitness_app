@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -11,8 +11,10 @@ import {
   TouchableOpacity,
   RefreshControl,
   Modal,
-  TextInput
+  TextInput,
+  Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { UserProfile, Post } from '@tier1fitness_app/types';
@@ -26,7 +28,6 @@ const POST_GRID_SIZE = (width - 6) / 3;
 
 const defaultProfilePic = 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff';
 
-// Extend type locally to include badges (since we just added it to backend)
 interface ExtendedProfile extends UserProfile {
   badges?: { label: string; icon: string; color: string }[];
 }
@@ -47,6 +48,12 @@ export function ProfileScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editBio, setEditBio] = useState('');
   const [editPic, setEditPic] = useState('');
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   const loadData = useCallback(async () => {
     if (!refreshing) setLoading(true);
@@ -150,6 +157,24 @@ export function ProfileScreen() {
     if (profile) navigation.push('Following', { userId: profile.id, title: `Following ${profile.username}` });
   };
 
+  const renderCustomHeader = () => {
+    const canGoBack = navigation.canGoBack();
+    const title = canGoBack ? "Profile" : "My Profile";
+
+    return (
+      <View style={styles.customHeader}>
+        <View style={styles.headerLeft}>
+          {canGoBack && (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={28} color={colors.text} />
+            </TouchableOpacity>
+          )}
+          <Text style={[styles.headerTitle, !canGoBack && { marginLeft: 0 }]}>{title}</Text>
+        </View>
+      </View>
+    );
+  };
+
   const renderHeader = () => {
     if (!profile) return null;
     const isOwnProfile = currentUserId === profile.id;
@@ -179,7 +204,6 @@ export function ProfileScreen() {
 
         {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
 
-        {/* --- NEW: TROPHY CASE --- */}
         {profile.badges && profile.badges.length > 0 && (
           <View style={styles.trophyCase}>
             {profile.badges.map((badge, index) => (
@@ -249,7 +273,7 @@ export function ProfileScreen() {
     );
   };
 
-const renderPostItem = ({ item }: { item: Post }) => {
+  const renderPostItem = ({ item }: { item: Post }) => {
     const postWithAuthor = item.author ? item : {
       ...item,
       author: {
@@ -258,7 +282,6 @@ const renderPostItem = ({ item }: { item: Post }) => {
         profilePicUrl: profile!.profilePicUrl
       }
     };
-
     return <PostCard post={postWithAuthor} />;
   };
   
@@ -292,6 +315,9 @@ const renderPostItem = ({ item }: { item: Post }) => {
 
   return (
     <View style={styles.container}>
+      {/* Custom Header with Manual Padding */}
+      {renderCustomHeader()}
+
       <Modal
         animationType="slide"
         transparent={true}
@@ -359,10 +385,38 @@ const renderPostItem = ({ item }: { item: Post }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  
+  // --- CUSTOM HEADER STYLES ---
+  customHeader: {
+    backgroundColor: colors.background,
+    // MANUAL OVERRIDE: Adds fixed padding to clear status bar
+    paddingTop: Platform.OS === 'android' ? 45 : 10,
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    zIndex: 10, // Ensure it sits on top
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '800',
+    marginLeft: 10,
+  },
+  backButton: {
+    padding: 4,
+    marginLeft: -8, // Pull the arrow closer to the edge
+  },
+  // ---------------------------
+
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
   errorText: { color: colors.text, fontSize: 16 },
   scrollContent: { paddingBottom: 20 },
-  header: { paddingTop: 10, alignItems: 'center', backgroundColor: colors.background, marginBottom: 10 },
+  header: { paddingTop: 20, alignItems: 'center', backgroundColor: colors.background, marginBottom: 10 },
   profileImage: { width: 90, height: 90, borderRadius: 45, marginBottom: 12, borderWidth: 2, borderColor: colors.primary, backgroundColor: '#333' },
   username: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 12 },
   bio: { color: colors.textSecondary, textAlign: 'center', marginBottom: 15, paddingHorizontal: 30 },
@@ -392,13 +446,12 @@ const styles = StyleSheet.create({
     width: '100%' 
   },
 
-  // --- NEW BADGE STYLES ---
   trophyCase: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     marginBottom: 15,
-    gap: 8, // Adds space between badges
+    gap: 8,
   },
   badgeItem: {
     flexDirection: 'row',
