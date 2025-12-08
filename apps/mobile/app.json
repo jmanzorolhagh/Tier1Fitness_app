@@ -29,9 +29,7 @@
         "foregroundImage": "./assets/fitness.jpg",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [
-        "android.permission.ACTIVITY_RECOGNITION"
-      ]
+      "permissions": ["ACTIVITY_RECOGNITION"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
