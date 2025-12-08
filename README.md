@@ -14,7 +14,21 @@
 5. [Quick Deployment Instructions (Expo + Cloud Backend)](#quick-deployment-instructions-expo--cloud-backend)  
 6. [Local-Only Setup Instructions](#local-only-setup-instructions)  
 7. [The Team](#the-team)
+
+### App Screenshots
+
+| Login | Login | Home Feed | Comment Feed |
+|:---:|:---:|:---:|:---:|
+ | <img src="https://github.com/user-attachments/assets/66545d1d-d780-44c2-8f9a-b9136268dcce" width="200" /> | <img src="https://github.com/user-attachments/assets/68f462f9-2077-4510-ad41-c0909c7e01aa" width="200" /> | <img src="https://github.com/user-attachments/assets/ffd3a02f-112c-4e9d-874c-08d3e752b486" width="200" /> | <img src="https://github.com/user-attachments/assets/35f20013-b5d8-4fc3-96b9-4c7505639145" width="200" /> |
+| **Search** | **Search Results** | **Challenge** | **Challenge Details** |
+| <img src="https://github.com/user-attachments/assets/9c6418e8-fa56-43cf-8876-f22a0d4b3675" width="200" /> | <img src="https://github.com/user-attachments/assets/989af0e9-a2c1-4540-99a7-85c16d386cc3" width="200" /> | <img src="https://github.com/user-attachments/assets/6080c0fa-ec17-4e1c-be2c-bebe0bb297d3" width="200" /> | <img src="https://github.com/user-attachments/assets/7bf9bb8e-533b-4090-9e6e-0876b88c4a2c" width="200" /> |
+| **Create Post** | **Create Challenge** | **Progress** | **Leaderboard** |
+| <img src="https://github.com/user-attachments/assets/4c1fe9fa-b72a-4aea-95f2-8c4edac49cd8" width="200" /> | <img src="https://github.com/user-attachments/assets/5540dbe8-1aeb-45d0-add5-b858aa3309dc" width="200" /> | <img src="https://github.com/user-attachments/assets/2438e5ac-406e-4cd6-b24f-2a107bc274b2" width="200" /> | <img src="https://github.com/user-attachments/assets/18e8a2d4-6ab0-42a1-a90d-825d895f938e" width="200" /> |
+| **Followers** | **Incomplete Challenge** | **Personal Profile** | **External Profile** |
+| <img src="https://github.com/user-attachments/assets/6f5047e9-2f57-4b80-af6b-cdf16217e26b" width="200" /> | <img src="https://github.com/user-attachments/assets/880657fb-2509-4f6e-a7e1-0d6bd014c114" width="200" /> | <img src="https://github.com/user-attachments/assets/f0b07dad-7d35-4753-8990-b5e9092dae30" width="200" /> | <img src="https://github.com/user-attachments/assets/0bf160e2-c5ee-4fa7-98c3-a860e8cf6780" width="200" /> |
+
 ## Project Overview
+
 
 Tier1Fitness is a **cross-platform mobile application** designed to bridge the gap between solitary activity tracking and social networking. Unlike traditional fitness apps that focus solely on metrics, Tier1Fitness emphasizes **motivation through community engagement**.
 
